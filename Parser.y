@@ -5,7 +5,10 @@ import Lexer
 import Syntax
 }
 
-%name parse
+%name parseProg PROGRAM
+%name parseExpr EXPR
+%name parseComm COMMAND
+
 %tokentype { Token }
 %error { parseError }
 
