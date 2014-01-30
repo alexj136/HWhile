@@ -26,11 +26,11 @@ evalExpr :: Context -> Expression -> Expression
 evalExpr ctx expr = case expr of
     Var s         -> case M.lookup s ctx of
         Nothing -> error $ "Variable " ++ s ++ " used before initialisation"
-        Just x  -> evalExpr ctx x
-    Hd (Cons a b) -> evalExpr ctx a
+        Just x  -> x
+    Hd (Cons a b) -> a
     Hd Nil        -> error "Cannot take head of nil"
     Hd other      -> Hd (evalExpr ctx other)
-    Tl (Cons a b) -> evalExpr ctx b
+    Tl (Cons a b) -> b
     Tl Nil        -> error "Cannot take tail of nil"
     Tl other      -> Tl (evalExpr ctx other)
     IsEq a b | evalExprNorm ctx a == evalExprNorm ctx b -> Cons Nil Nil
