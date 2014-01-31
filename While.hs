@@ -11,3 +11,11 @@ readComm = P.parseComm . L.alexScanTokens
 
 readExpr :: String -> S.Expression
 readExpr = P.parseExpr . L.alexScanTokens 
+
+main = do
+       putStrLn "ENTER A WHILE PROGRAM:"
+       prog <- getLine 
+       putStrLn "ENTER AN ARGUMENT:"
+       arg <- getLine
+       putStrLn "RESULT:"
+       putStrLn (show ( I.evalProg (readExpr arg) (readProg prog)))

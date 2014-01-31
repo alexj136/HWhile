@@ -16,8 +16,8 @@ evalComms ctx []     = ctx
 evalComms ctx (c:cs) = evalComms (evalComm ctx c) cs
 
 evalComm :: Context -> Command -> Context
-evalComm ctx (Assign v x) = M.insert v x ctx
-evalComm ctx (While x cs) = case evalExpr ctx x of
+evalComm ctx (Assign v x) = M.insert v (evalExprNorm ctx x) ctx
+evalComm ctx (While x cs) = case evalExprNorm ctx x of
     Nil -> ctx
     _   -> evalComm ctx' (While x cs)
         where ctx' = evalComms ctx cs
