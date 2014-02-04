@@ -2,6 +2,7 @@ import qualified Lexer as L
 import qualified Parser as P
 import qualified Syntax as S
 import qualified Interpreter as I
+import System.Environment
 
 readProg :: String -> S.Program
 readProg = P.parseProg . L.alexScanTokens 
@@ -12,10 +13,11 @@ readComm = P.parseComm . L.alexScanTokens
 readExpr :: String -> S.Expression
 readExpr = P.parseExpr . L.alexScanTokens 
 
+evalFromStr :: String -> String -> S.Expression
+evalFromStr argStr progStr = I.evalProg (readExpr argStr) (readProg progStr)
+    where
+
 main = do
-       putStrLn "ENTER A WHILE PROGRAM:"
-       prog <- getLine 
-       putStrLn "ENTER AN ARGUMENT:"
-       arg <- getLine
-       putStrLn "RESULT:"
-       putStrLn (show ( I.evalProg (readExpr arg) (readProg prog)))
+    cmdLnArgs <- getArgs
+    progStr <- readFile (cmdLnArgs !! 0)
+    return $ evalFromStr (cmdLnArgs !! 1) progStr

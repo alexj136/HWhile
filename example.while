@@ -1,0 +1,3 @@
+read x;
+y := (nil.x);
+write y
