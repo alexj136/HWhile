@@ -1,3 +1,17 @@
 read x;
-y := (nil.x);
-write y
+y := (nil.(nil.(nil.(nil.(nil.(nil.(nil.(nil.(nil.(nil.nil))))))))));
+while y do {
+    y := tl y;
+    x := (nil.x);
+
+    z := (nil.nil);
+    while z do {
+        z := nil;
+
+        a := (nil.nil);
+        while a do {
+            a := nil;
+        };
+    };
+};
+write x

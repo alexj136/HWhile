@@ -22,4 +22,4 @@ evalFromStr argStr progStr = I.evalProg (readExpr argStr) (readProg progStr)
 main = do
     cmdLnArgs <- getArgs
     progStr <- readFile (cmdLnArgs !! 0)
-    return $ evalFromStr (cmdLnArgs !! 1) progStr
+    putStrLn $ show $ evalFromStr (cmdLnArgs !! 1) progStr
