@@ -325,7 +325,7 @@ happyReduction_3 ((HappyAbsSyn7  happy_var_6) `HappyStk`
 	_ `HappyStk`
 	(HappyAbsSyn8  happy_var_4) `HappyStk`
 	_ `HappyStk`
-	(HappyTerminal (TokenVar happy_var_2)) `HappyStk`
+	(HappyTerminal (TokenVar     p happy_var_2)) `HappyStk`
 	_ `HappyStk`
 	happyRest)
 	 = HappyAbsSyn6
@@ -357,7 +357,7 @@ happyReduction_6 _
 	)
 
 happyReduce_7 = happySpecReduce_1  7 happyReduction_7
-happyReduction_7 (HappyTerminal (TokenVar happy_var_1))
+happyReduction_7 (HappyTerminal (TokenVar     p happy_var_1))
 	 =  HappyAbsSyn7
 		 (Var happy_var_1
 	)
@@ -426,7 +426,7 @@ happyReduction_14 (_ `HappyStk`
 happyReduce_15 = happySpecReduce_3  9 happyReduction_15
 happyReduction_15 (HappyAbsSyn7  happy_var_3)
 	_
-	(HappyTerminal (TokenVar happy_var_1))
+	(HappyTerminal (TokenVar     p happy_var_1))
 	 =  HappyAbsSyn9
 		 (Assign happy_var_1 happy_var_3
 	)
@@ -438,23 +438,23 @@ happyNewToken action sts stk [] =
 happyNewToken action sts stk (tk:tks) =
 	let cont i = action i i tk (HappyState action) sts stk tks in
 	case tk of {
-	TokenConsInf -> cont 10;
-	TokenOpenBrc -> cont 11;
-	TokenClosBrc -> cont 12;
-	TokenOpenCur -> cont 13;
-	TokenClosCur -> cont 14;
-	TokenIsEq -> cont 15;
-	TokenAssign -> cont 16;
-	TokenNil -> cont 17;
-	TokenSemiCo -> cont 18;
-	TokenConsPos -> cont 19;
-	TokenHead -> cont 20;
-	TokenTail -> cont 21;
-	TokenWhile -> cont 22;
-	TokenDo -> cont 23;
-	TokenRead -> cont 24;
-	TokenWrite -> cont 25;
-	TokenVar happy_dollar_dollar -> cont 26;
+	TokenConsInf p -> cont 10;
+	TokenOpenBrc p -> cont 11;
+	TokenClosBrc p -> cont 12;
+	TokenOpenCur p -> cont 13;
+	TokenClosCur p -> cont 14;
+	TokenIsEq    p -> cont 15;
+	TokenAssign  p -> cont 16;
+	TokenNil     p -> cont 17;
+	TokenSemiCo  p -> cont 18;
+	TokenConsPre p -> cont 19;
+	TokenHead    p -> cont 20;
+	TokenTail    p -> cont 21;
+	TokenWhile   p -> cont 22;
+	TokenDo      p -> cont 23;
+	TokenRead    p -> cont 24;
+	TokenWrite   p -> cont 25;
+	TokenVar     p happy_dollar_dollar -> cont 26;
 	_ -> happyError' (tk:tks)
 	}
 
@@ -492,7 +492,15 @@ happySeq = happyDontSeq
 
 
 parseError :: [Token] -> a
-parseError _ = error "Parse error"
+parseError []           = error "Parse error: reached end of file while parsing"
+parseError (tok : rest) = error $ concat
+    [ "Parse error: "
+    , (tokStr tok)
+    , " at line "
+    , (show (lineNo tok))
+    , ", char "
+    , (show (charNo tok))
+    ]
 {-# LINE 1 "templates/GenericTemplate.hs" #-}
 {-# LINE 1 "templates/GenericTemplate.hs" #-}
 {-# LINE 1 "<command-line>" #-}

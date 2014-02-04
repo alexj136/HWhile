@@ -92,7 +92,25 @@ type Byte = Word8
 -- -----------------------------------------------------------------------------
 -- The input type
 
-{-# LINE 72 "templates/wrappers.hs" #-}
+
+type AlexInput = (AlexPosn,     -- current position,
+                  Char,         -- previous char
+                  [Byte],       -- pending bytes on current char
+                  String)       -- current input string
+
+ignorePendingBytes :: AlexInput -> AlexInput
+ignorePendingBytes (p,c,ps,s) = (p,c,[],s)
+
+alexInputPrevChar :: AlexInput -> Char
+alexInputPrevChar (p,c,bs,s) = c
+
+alexGetByte :: AlexInput -> Maybe (Byte,AlexInput)
+alexGetByte (p,c,(b:bs),s) = Just (b,(p,c,bs,s))
+alexGetByte (p,c,[],[]) = Nothing
+alexGetByte (p,_,[],(c:s))  = let p' = alexMove p c 
+                                  (b:bs) = utf8Encode c
+                              in p' `seq`  Just (b, (p', c, bs, s))
+
 
 {-# LINE 92 "templates/wrappers.hs" #-}
 
@@ -110,7 +128,18 @@ type Byte = Word8
 -- `move_pos' calculates the new position after traversing a given character,
 -- assuming the usual eight character tab stops.
 
-{-# LINE 144 "templates/wrappers.hs" #-}
+
+data AlexPosn = AlexPn !Int !Int !Int
+        deriving (Eq,Show)
+
+alexStartPos :: AlexPosn
+alexStartPos = AlexPn 0 1 1
+
+alexMove :: AlexPosn -> Char -> AlexPosn
+alexMove (AlexPn a l c) '\t' = AlexPn (a+1)  l     (((c+7) `div` 8)*8+1)
+alexMove (AlexPn a l c) '\n' = AlexPn (a+1) (l+1)   1
+alexMove (AlexPn a l c) _    = AlexPn (a+1)  l     (c+1)
+
 
 -- -----------------------------------------------------------------------------
 -- Default monad
@@ -127,28 +156,7 @@ type Byte = Word8
 -- -----------------------------------------------------------------------------
 -- Basic wrapper
 
-
-type AlexInput = (Char,[Byte],String)
-
-alexInputPrevChar :: AlexInput -> Char
-alexInputPrevChar (c,_,_) = c
-
--- alexScanTokens :: String -> [token]
-alexScanTokens str = go ('\n',[],str)
-  where go inp@(_,_bs,s) =
-          case alexScan inp 0 of
-                AlexEOF -> []
-                AlexError _ -> error "lexical error"
-                AlexSkip  inp' len     -> go inp'
-                AlexToken inp' len act -> act (take len s) : go inp'
-
-alexGetByte :: AlexInput -> Maybe (Byte,AlexInput)
-alexGetByte (c,(b:bs),s) = Just (b,(c,bs,s))
-alexGetByte (c,[],[])    = Nothing
-alexGetByte (_,[],(c:s)) = case utf8Encode c of
-                             (b:bs) -> Just (b, (c, bs, s))
-                             [] -> Nothing
-
+{-# LINE 360 "templates/wrappers.hs" #-}
 
 
 -- -----------------------------------------------------------------------------
@@ -164,7 +172,16 @@ alexGetByte (_,[],(c:s)) = case utf8Encode c of
 
 -- Adds text positions to the basic model.
 
-{-# LINE 409 "templates/wrappers.hs" #-}
+
+--alexScanTokens :: String -> [token]
+alexScanTokens str = go (alexStartPos,'\n',[],str)
+  where go inp@(pos,_,_,str) =
+          case alexScan inp 0 of
+                AlexEOF -> []
+                AlexError ((AlexPn _ line column),_,_,_) -> error $ "lexical error at line " ++ (show line) ++ ", column " ++ (show column)
+                AlexSkip  inp' len     -> go inp'
+                AlexToken inp' len act -> act pos (take len str) : go inp'
+
 
 
 -- -----------------------------------------------------------------------------
@@ -194,44 +211,112 @@ alex_accept = listArray (0::Int,44) [AlexAccNone,AlexAccNone,AlexAccNone,AlexAcc
 {-# LINE 35 "Lexer.x" #-}
 
 data Token
-    = TokenConsInf
-    | TokenOpenBrc
-    | TokenClosBrc
-    | TokenOpenCur
-    | TokenClosCur
-    | TokenIsEq
-    | TokenAssign
-    | TokenNil
-    | TokenSemiCo
-    | TokenConsPos
-    | TokenHead
-    | TokenTail
-    | TokenWhile
-    | TokenDo
-    | TokenRead
-    | TokenWrite
-    | TokenVar String
+    = TokenConsInf (Int, Int)
+    | TokenOpenBrc (Int, Int)
+    | TokenClosBrc (Int, Int)
+    | TokenOpenCur (Int, Int)
+    | TokenClosCur (Int, Int)
+    | TokenIsEq    (Int, Int)
+    | TokenAssign  (Int, Int)
+    | TokenNil     (Int, Int)
+    | TokenSemiCo  (Int, Int)
+    | TokenConsPre (Int, Int)
+    | TokenHead    (Int, Int)
+    | TokenTail    (Int, Int)
+    | TokenWhile   (Int, Int)
+    | TokenDo      (Int, Int)
+    | TokenRead    (Int, Int)
+    | TokenWrite   (Int, Int)
+    | TokenVar     (Int, Int) String
     deriving (Show, Eq)
 
-alex_action_1 =  \s -> TokenConsInf 
-alex_action_2 =  \s -> TokenOpenBrc 
-alex_action_3 =  \s -> TokenClosBrc 
-alex_action_4 =  \s -> TokenOpenCur 
-alex_action_5 =  \s -> TokenClosCur 
-alex_action_6 =  \s -> TokenIsEq    
-alex_action_7 =  \s -> TokenAssign  
-alex_action_8 =  \s -> TokenNil     
-alex_action_9 =  \s -> TokenSemiCo  
-alex_action_10 =  \s -> TokenConsPos 
-alex_action_11 =  \s -> TokenHead    
-alex_action_12 =  \s -> TokenHead    
-alex_action_13 =  \s -> TokenTail    
-alex_action_14 =  \s -> TokenTail    
-alex_action_15 =  \s -> TokenWhile   
-alex_action_16 =  \s -> TokenDo      
-alex_action_17 =  \s -> TokenRead    
-alex_action_18 =  \s -> TokenWrite   
-alex_action_19 =  \s -> TokenVar s   
+-- Get the number of lines into the file that the text produced this token
+-- occurred
+lineNo :: Token -> Int
+lineNo tok = case tok of
+    TokenConsInf (x, _)   -> x
+    TokenOpenBrc (x, _)   -> x
+    TokenClosBrc (x, _)   -> x
+    TokenOpenCur (x, _)   -> x
+    TokenClosCur (x, _)   -> x
+    TokenIsEq    (x, _)   -> x
+    TokenAssign  (x, _)   -> x
+    TokenNil     (x, _)   -> x
+    TokenSemiCo  (x, _)   -> x
+    TokenConsPre (x, _)   -> x
+    TokenHead    (x, _)   -> x
+    TokenTail    (x, _)   -> x
+    TokenWhile   (x, _)   -> x
+    TokenDo      (x, _)   -> x
+    TokenRead    (x, _)   -> x
+    TokenWrite   (x, _)   -> x
+    TokenVar     (x, _) _ -> x
+
+-- Get the number of characters into the line that the text that produced this
+-- token occurred
+charNo :: Token -> Int
+charNo tok = case tok of
+    TokenConsInf (_, x)   -> x
+    TokenOpenBrc (_, x)   -> x
+    TokenClosBrc (_, x)   -> x
+    TokenOpenCur (_, x)   -> x
+    TokenClosCur (_, x)   -> x
+    TokenIsEq    (_, x)   -> x
+    TokenAssign  (_, x)   -> x
+    TokenNil     (_, x)   -> x
+    TokenSemiCo  (_, x)   -> x
+    TokenConsPre (_, x)   -> x
+    TokenHead    (_, x)   -> x
+    TokenTail    (_, x)   -> x
+    TokenWhile   (_, x)   -> x
+    TokenDo      (_, x)   -> x
+    TokenRead    (_, x)   -> x
+    TokenWrite   (_, x)   -> x
+    TokenVar     (_, x) _ -> x
+
+-- Get a string representation of a token for error message purposes
+tokStr :: Token -> String
+tokStr tok = case tok of
+    TokenConsInf (_, _)   -> "'.'"
+    TokenOpenBrc (_, _)   -> "'('"
+    TokenClosBrc (_, _)   -> "')'"
+    TokenOpenCur (_, _)   -> "'{'"
+    TokenClosCur (_, _)   -> "'}'"
+    TokenIsEq    (_, _)   -> "'?='"
+    TokenAssign  (_, _)   -> "':='"
+    TokenNil     (_, _)   -> "'nil'"
+    TokenSemiCo  (_, _)   -> "';'"
+    TokenConsPre (_, _)   -> "'cons'"
+    TokenHead    (_, _)   -> "'head'"
+    TokenTail    (_, _)   -> "'tail'"
+    TokenWhile   (_, _)   -> "'while'"
+    TokenDo      (_, _)   -> "'do'"
+    TokenRead    (_, _)   -> "'read'"
+    TokenWrite   (_, _)   -> "'write'"
+    TokenVar     (_, _) s -> "variable '" ++ s ++ "'"
+
+pos :: AlexPosn -> (Int, Int)
+pos (AlexPn i j k) = (j, k)
+
+alex_action_1 =  \p s -> TokenConsInf (pos p)   
+alex_action_2 =  \p s -> TokenOpenBrc (pos p)   
+alex_action_3 =  \p s -> TokenClosBrc (pos p)   
+alex_action_4 =  \p s -> TokenOpenCur (pos p)   
+alex_action_5 =  \p s -> TokenClosCur (pos p)   
+alex_action_6 =  \p s -> TokenIsEq    (pos p)   
+alex_action_7 =  \p s -> TokenAssign  (pos p)   
+alex_action_8 =  \p s -> TokenNil     (pos p)   
+alex_action_9 =  \p s -> TokenSemiCo  (pos p)   
+alex_action_10 =  \p s -> TokenConsPre (pos p)   
+alex_action_11 =  \p s -> TokenHead    (pos p)   
+alex_action_12 =  \p s -> TokenHead    (pos p)   
+alex_action_13 =  \p s -> TokenTail    (pos p)   
+alex_action_14 =  \p s -> TokenTail    (pos p)   
+alex_action_15 =  \p s -> TokenWhile   (pos p)   
+alex_action_16 =  \p s -> TokenDo      (pos p)   
+alex_action_17 =  \p s -> TokenRead    (pos p)   
+alex_action_18 =  \p s -> TokenWrite   (pos p)   
+alex_action_19 =  \p s -> TokenVar     (pos p) s 
 {-# LINE 1 "templates/GenericTemplate.hs" #-}
 {-# LINE 1 "templates/GenericTemplate.hs" #-}
 {-# LINE 1 "<command-line>" #-}

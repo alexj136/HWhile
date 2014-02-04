@@ -13,23 +13,23 @@ import Syntax
 %error { parseError }
 
 %token
-    ConsInf { TokenConsInf }
-    OpenBrc { TokenOpenBrc }
-    ClosBrc { TokenClosBrc }
-    OpenCur { TokenOpenCur }
-    ClosCur { TokenClosCur }
-    IsEq    { TokenIsEq    }
-    Assign  { TokenAssign  }
-    Nil     { TokenNil     }
-    SemiCo  { TokenSemiCo  }
-    ConsPos { TokenConsPos }
-    Head    { TokenHead    }
-    Tail    { TokenTail    }
-    While   { TokenWhile   }
-    Do      { TokenDo      }
-    Read    { TokenRead    }
-    Write   { TokenWrite   }
-    Var     { TokenVar $$  }
+    ConsInf { TokenConsInf p    }
+    OpenBrc { TokenOpenBrc p    }
+    ClosBrc { TokenClosBrc p    }
+    OpenCur { TokenOpenCur p    }
+    ClosCur { TokenClosCur p    }
+    IsEq    { TokenIsEq    p    }
+    Assign  { TokenAssign  p    }
+    Nil     { TokenNil     p    }
+    SemiCo  { TokenSemiCo  p    }
+    ConsPre { TokenConsPre p    }
+    Head    { TokenHead    p    }
+    Tail    { TokenTail    p    }
+    While   { TokenWhile   p    }
+    Do      { TokenDo      p    }
+    Read    { TokenRead    p    }
+    Write   { TokenWrite   p    }
+    Var     { TokenVar     p $$ }
 
 %%
 
@@ -37,7 +37,7 @@ PROGRAM :: { Program }
 PROGRAM : Read Var SemiCo COMMLIST Write EXPR { Program $2 $4 $6 }
 
 EXPR :: { Expression }
-EXPR : ConsPos EXPR EXPR    { Cons $2 $3 } 
+EXPR : ConsPre EXPR EXPR    { Cons $2 $3 } 
      | EXPR ConsInf EXPR    { Cons $1 $3 }
      | Nil                  { Nil        }
      | Var                  { Var $1     }
@@ -56,5 +56,13 @@ COMMAND : While EXPR Do OpenCur COMMLIST ClosCur { While $2 $5  }
 
 {
 parseError :: [Token] -> a
-parseError _ = error "Parse error"
+parseError []           = error "Parse error: reached end of file while parsing"
+parseError (tok : rest) = error $ concat
+    [ "Parse error: "
+    , (tokStr tok)
+    , " at line "
+    , (show (lineNo tok))
+    , ", char "
+    , (show (charNo tok))
+    ]
 }
