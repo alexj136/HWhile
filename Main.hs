@@ -40,6 +40,21 @@ helpMessage = concat $ (intersperse "\n") $
     , "                while trees."
     ]
 
+-- Print an expression in a certain way according to the given command line
+-- argument (see Main.hs for a description of what these should do)
+showFlag :: String -> Expression -> String
+showFlag f exp = case f of
+    "-i"   -> case parseInt exp of
+        Just i  -> show i
+        Nothing -> "E"
+    "-iv"  -> case parseInt exp of
+        Just i  -> show i
+        Nothing -> show exp
+    "-l"   -> show (toActualList exp)
+    "-li"  -> show (map (showIntExp False) (toActualList exp))
+    "-liv" -> show (map (showIntExp True ) (toActualList exp))
+    _      -> "Invalid argument(s) supplied. Run 'hwhile -h' for help."
+
 main = do
     args <- getArgs
 
