@@ -22,7 +22,6 @@ evalComm ctx (While x cs) = case evalExprNorm ctx x of
     _   -> evalComm ctx' (While x cs)
         where ctx' = evalComms ctx cs
 
---lol
 evalExpr :: Context -> Expression -> Expression
 evalExpr ctx expr = case expr of
     Var s         -> case M.lookup s ctx of
