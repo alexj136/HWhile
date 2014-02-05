@@ -11,26 +11,27 @@ $alpha = [$lower $upper]
 $alnum = [$alpha $digit]
 
 tokens :-
-    $white+         ;
-    \.              { \p s -> TokenConsInf (pos p)   } -- Infix cons
-    \(              { \p s -> TokenOpenBrc (pos p)   }
-    \)              { \p s -> TokenClosBrc (pos p)   }
-    \{              { \p s -> TokenOpenCur (pos p)   }
-    \}              { \p s -> TokenClosCur (pos p)   }
-    \?\=            { \p s -> TokenIsEq    (pos p)   }
-    \:\=            { \p s -> TokenAssign  (pos p)   }
-    "nil"           { \p s -> TokenNil     (pos p)   }
-    \;              { \p s -> TokenSemiCo  (pos p)   }
-    "cons"          { \p s -> TokenConsPre (pos p)   } -- Prefix cons
-    "hd"            { \p s -> TokenHead    (pos p)   }
-    "head"          { \p s -> TokenHead    (pos p)   }
-    "tl"            { \p s -> TokenTail    (pos p)   }
-    "tail"          { \p s -> TokenTail    (pos p)   }
-    "while"         { \p s -> TokenWhile   (pos p)   }
-    "do"            { \p s -> TokenDo      (pos p)   }
-    "read"          { \p s -> TokenRead    (pos p)   }
-    "write"         { \p s -> TokenWrite   (pos p)   }
-    [$alnum \_ \']+ { \p s -> TokenVar     (pos p) s }
+    $white+               ;
+    \.                    { \p s -> TokenConsInf (pos p)   } -- Infix cons
+    \(                    { \p s -> TokenOpenBrc (pos p)   }
+    \)                    { \p s -> TokenClosBrc (pos p)   }
+    \{                    { \p s -> TokenOpenCur (pos p)   }
+    \}                    { \p s -> TokenClosCur (pos p)   }
+    \?\=                  { \p s -> TokenIsEq    (pos p)   }
+    \:\=                  { \p s -> TokenAssign  (pos p)   }
+    "nil"                 { \p s -> TokenNil     (pos p)   }
+    \;                    { \p s -> TokenSemiCo  (pos p)   }
+    "cons"                { \p s -> TokenConsPre (pos p)   } -- Prefix cons
+    "hd"                  { \p s -> TokenHead    (pos p)   }
+    "head"                { \p s -> TokenHead    (pos p)   }
+    "tl"                  { \p s -> TokenTail    (pos p)   }
+    "tail"                { \p s -> TokenTail    (pos p)   }
+    "while"               { \p s -> TokenWhile   (pos p)   }
+    "do"                  { \p s -> TokenDo      (pos p)   }
+    "read"                { \p s -> TokenRead    (pos p)   }
+    "write"               { \p s -> TokenWrite   (pos p)   }
+    $alpha[$alnum \_ \']* { \p s -> TokenVar     (pos p) s }
+    [1-9][$digit]*        { \p s -> TokenInt     (pos p) s }
 
 {
 data Token
@@ -51,6 +52,7 @@ data Token
     | TokenRead    (Int, Int)
     | TokenWrite   (Int, Int)
     | TokenVar     (Int, Int) String
+    | TokenInt     (Int, Int) String
     deriving (Show, Eq)
 
 -- Get the number of lines into the file that the text produced this token
@@ -74,6 +76,7 @@ lineNo tok = case tok of
     TokenRead    (x, _)   -> x
     TokenWrite   (x, _)   -> x
     TokenVar     (x, _) _ -> x
+    TokenInt     (x, _) _ -> x
 
 -- Get the number of characters into the line that the text that produced this
 -- token occurred
@@ -96,6 +99,7 @@ charNo tok = case tok of
     TokenRead    (_, x)   -> x
     TokenWrite   (_, x)   -> x
     TokenVar     (_, x) _ -> x
+    TokenInt     (_, x) _ -> x
 
 -- Get a string representation of a token for error message purposes
 tokStr :: Token -> String
@@ -117,6 +121,7 @@ tokStr tok = case tok of
     TokenRead    (_, _)   -> "'read'"
     TokenWrite   (_, _)   -> "'write'"
     TokenVar     (_, _) s -> "variable '" ++ s ++ "'"
+    TokenInt     (_, _) s -> "integer '" ++ s ++ "'"
 
 pos :: AlexPosn -> (Int, Int)
 pos (AlexPn i j k) = (j, k)

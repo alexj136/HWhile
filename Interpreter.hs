@@ -22,16 +22,17 @@ evalComm ctx (While x cs) = case evalExprNorm ctx x of
     _   -> evalComm ctx' (While x cs)
         where ctx' = evalComms ctx cs
 
+--lol
 evalExpr :: Context -> Expression -> Expression
 evalExpr ctx expr = case expr of
     Var s         -> case M.lookup s ctx of
-        Nothing -> error $ "Variable " ++ s ++ " used before initialisation"
+        Nothing -> Nil
         Just x  -> x
     Hd (Cons a b) -> a
-    Hd Nil        -> error "Cannot take head of nil"
+    Hd Nil        -> Nil
     Hd other      -> Hd (evalExpr ctx other)
     Tl (Cons a b) -> b
-    Tl Nil        -> error "Cannot take tail of nil"
+    Tl Nil        -> Nil
     Tl other      -> Tl (evalExpr ctx other)
     IsEq a b | evalExprNorm ctx a == evalExprNorm ctx b -> Cons Nil Nil
              | otherwise                                -> Nil

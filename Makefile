@@ -1,15 +1,15 @@
-MAIN     = Main
 MODULES  = Syntax Lexer Parser Interpreter
 
-OBJECTS  = $(MAIN:=.o)  $(MODULES:=.o)  $(TESTS:=.o)
-HIFILES  = $(MAIN:=.hi) $(MODULES:=.hi) $(TESTS:=.hi)
-BINARIES = $(MAIN)      $(MODULES)      $(TESTS)
+Main: $(MODULES:=.hs)
+	@ghc --make Main
 
-all: $(MAIN)
+Lexer.hs: Lexer.x
+	@alex Lexer.x
 
-$(MAIN):
-	@ghc --make $(MAIN)
+Parser.hs: Parser.y
+	@happy Parser.y
 
 clean:
-	@rm -f $(OBJECTS) $(HIFILES) $(BINARIES)
+	@rm -f $(MODULES:=.o) $(MODULES:=.hi) $(MODULES) \
+		Main.o Main.hi Main Lexer.hs Parser.hs
 	@echo "CLEANED"

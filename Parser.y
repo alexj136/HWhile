@@ -30,6 +30,7 @@ import Syntax
     Read    { TokenRead    p    }
     Write   { TokenWrite   p    }
     Var     { TokenVar     p $$ }
+    Int     { TokenInt     p $$ }
 
 %%
 
@@ -41,6 +42,7 @@ EXPR : ConsPre EXPR EXPR    { Cons $2 $3 }
      | EXPR ConsInf EXPR    { Cons $1 $3 }
      | Nil                  { Nil        }
      | Var                  { Var $1     }
+     | Int                  { mkInt $1   }
      | OpenBrc EXPR ClosBrc { $2         }
      | Head EXPR            { Hd $2      }
      | Tail EXPR            { Tl $2      }
@@ -65,4 +67,14 @@ parseError (tok : rest) = error $ concat
     , ", char "
     , (show (charNo tok))
     ]
+
+-- Takes a string representation of an integer and converts it into the
+-- equivalent Expression representation
+mkInt :: String -> Expression
+mkInt s = intToExp (read s) Nil
+
+-- Makes an Expression from an Int, using accumulating parameter style
+intToExp :: Int -> Expression -> Expression
+intToExp 0 acc = acc
+intToExp n acc = intToExp (n - 1) (Cons Nil acc)
 }
