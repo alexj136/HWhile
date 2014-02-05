@@ -5,6 +5,7 @@ import qualified Parser as P
 import qualified Syntax as S
 import qualified Interpreter as I
 import System.Environment
+import Data.List (intersperse)
 
 readProg :: String -> S.Program
 readProg = P.parseProg . L.alexScanTokens 
@@ -19,7 +20,42 @@ evalFromStr :: String -> String -> S.Expression
 evalFromStr argStr progStr = I.evalProg (readExpr argStr) (readProg progStr)
     where
 
+helpMessage = concat $ (intersperse "\n") $
+    [ "HWhile: an interpreter for the while language, written in Haskell by Alex Jeffery."
+    , "Usage:"
+    , "    hwhile -h                    - Print this message and exit."
+    , "    hwhile <FLAG> <FILE> <EXPR>  - Run the program in <FILE> with input <EXPR>."
+    , "                                   Note that <EXPR> may require surrounding \"double quotes\"."
+    , "                                   Program output will be displayed in the format specified by"
+    , "                                   the chosen <FLAG>"
+    , "Possible flags:"
+    , "    [NOTHING] - Display output as a while tree"
+    , "    -i        - Display output as an integer. If the output is not a valid integer, 'E' will"
+    , "                be displayed"
+    , "    -iv       - Display output as an integer. If the output is not a valid integer, it will be"
+    , "                displayed as a while tree"
+    , "    -l        - Display output as a list of while trees"
+    , "    -li       - Display output as a list of integers. Invalid elements will all display as 'E'"
+    , "    -liv      - Display output as a list of integers. Invalid elements will all display as"
+    , "                while trees."
+    ]
+
 main = do
-    cmdLnArgs <- getArgs
-    progStr <- readFile (cmdLnArgs !! 0)
-    putStrLn $ show $ evalFromStr (cmdLnArgs !! 1) progStr
+    args <- getArgs
+
+    if (length args) == 0 then do
+        putStrLn "No arguments supplied. Run 'hwhile -h' for help."
+
+    else if (args !! 0) == "-h" then do
+        putStrLn helpMessage
+
+    else if (length args) == 2 then do
+        progStr <- readFile (args !! 0)
+        putStrLn $ show (evalFromStr (args !! 1) progStr)
+
+    else if (length args) == 3 then do
+        progStr <- readFile (args !! 1)
+        putStrLn $ S.showFlag (args !! 0) (evalFromStr (args !! 2) progStr)
+
+    else
+        putStrLn "Invalid argument(s) supplied. Run 'hwhile -h' for help."

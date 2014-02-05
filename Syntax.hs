@@ -49,3 +49,50 @@ instance Show Expression where
     show (Hd   x  ) = "hd " ++ show x
     show (Tl   x  ) = "tl " ++ show x
     show (IsEq a b) = "=? " ++ show a ++ ' ' : show b
+
+-- Print an expression in a certain way according to the given command line
+-- argument (see Main.hs for a description of what these should do)
+showFlag :: String -> Expression -> String
+showFlag f exp = case f of
+    "-i"   -> case parseInt exp of
+        Just i  -> show i
+        Nothing -> "E"
+    "-iv"  -> case parseInt exp of
+        Just i  -> show i
+        Nothing -> show exp
+    "-l"   -> show (toActualList exp)
+    "-li"  -> show (map (showIntExp False) (toActualList exp))
+    "-liv" -> show (map (showIntExp True ) (toActualList exp))
+    _      -> "Invalid argument(s) supplied. Run 'hwhile -h' for help."
+
+-- Convert a while integer expression into a decimal number string. If the
+-- isVerbose argument is True, unparsable expressions will be displayed in full.
+-- If it is False, unparsable expressions yield "E".
+showIntExp :: Bool -> Expression -> String
+showIntExp isVerbose exp = case parseInt exp of
+    Just i              -> show i
+    Nothing | isVerbose -> show exp
+    Nothing | otherwise -> "E"
+
+-- Parse an Int from a while Expression. Not all while expressions encode
+-- integers, so return a value in the Maybe monad.
+parseInt :: Expression -> Maybe Int
+parseInt = parseIntAcc 0
+    where
+    parseIntAcc :: Int -> Expression -> Maybe Int
+    parseIntAcc acc Nil          = Just acc
+    parseIntAcc acc (Cons Nil x) = do
+        { next <- parseIntAcc (acc + 1) x
+        ; return next
+        }
+    parseIntAcc acc _            = Nothing
+
+-- Convert a while expression encoded list into a haskell list
+toActualList :: Expression -> [Expression]
+toActualList = reverse . (toActualListAcc [])
+    where
+    toActualListAcc :: [Expression] -> Expression -> [Expression]
+    toActualListAcc acc exp = case exp of
+        Nil              -> acc
+        (Cons elem rest) -> toActualListAcc (elem : acc) rest
+        _                -> error "Cannot print unreduced expression"
