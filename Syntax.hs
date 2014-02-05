@@ -21,19 +21,19 @@ data Expression = Var  String
     deriving Eq
 
 instance Show Program where
-    show (Program r c w) = "read " ++ r ++ ";\n" ++
-                           (show c) ++
-                           "write " ++ (show w)
+    show (Program r c w) = "read " ++ r ++ ";\n"
+                           ++ (show c) ++ ";\n"
+                           ++ "write " ++ (show w)
 
 instance Show Command where
     show c = showC 0 c
 
 showC :: Int -> Command -> String
-showC i (While  x c) = (tabs i) ++ "while " ++ show x ++ " do{\n"
-                       ++ showC (i + 1) c
-                       ++ (tabs i) ++ "}\n"
+showC i (While  x c) = (tabs i) ++ "while " ++ show x ++ " do {\n"
+                       ++ showC (i + 1) c ++ "\n"
+                       ++ (tabs i) ++ "}"
 showC i (Assign v x) = (tabs i) ++ v ++ " := " ++ show x
-showC i (Compos a b) = (tabs i) ++ (showC i a) ++ ";\n"
+showC i (Compos a b) = (showC i a) ++ ";\n"
                        ++ (showC i b)
 
 tabs :: Int -> String
