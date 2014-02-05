@@ -11,7 +11,8 @@ $alpha = [$lower $upper]
 $alnum = [$alpha $digit]
 
 tokens :-
-    $white+               ;
+    $white+               ; -- Ignore whitespace
+    \#.*\n                ; -- Ignore the rest of a line after '#'
     \.                    { \p s -> TokenConsInf (pos p)   } -- Infix cons
     \(                    { \p s -> TokenOpenBrc (pos p)   }
     \)                    { \p s -> TokenClosBrc (pos p)   }
@@ -31,6 +32,7 @@ tokens :-
     "read"                { \p s -> TokenRead    (pos p)   }
     "write"               { \p s -> TokenWrite   (pos p)   }
     $alpha[$alnum \_ \']* { \p s -> TokenVar     (pos p) s }
+    "0"                   { \p s -> TokenInt     (pos p) s }
     [1-9][$digit]*        { \p s -> TokenInt     (pos p) s }
 
 {

@@ -1,8 +1,14 @@
+# A simple addition program
+
 read XY;
 X := hd XY;
 Y := tl XY;
+
+# Note that while loops require a '{' to open and a '};' to close.
+# If you don't like it, feel free to improve the parser.
+
 while X do {
     Y := ( nil . Y );
-    X := tl X;
+X := tl X; # Indentation doesn't matter
 };
 write Y
