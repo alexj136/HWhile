@@ -12,6 +12,12 @@ import Syntax
 %tokentype { Token }
 %error { parseError }
 
+%right IsEq
+%right ConsPre
+%right ConsInf
+%right Head Tail
+%left SemiCo
+
 %token
     ConsInf { TokenConsInf p    }
     OpenBrc { TokenOpenBrc p    }
@@ -35,7 +41,7 @@ import Syntax
 %%
 
 PROGRAM :: { Program }
-PROGRAM : Read Var SemiCo COMMLIST Write EXPR { Program $2 $4 $6 }
+PROGRAM : Read Var SemiCo COMMAND SemiCo Write EXPR { Program $2 $4 $7 }
 
 EXPR :: { Expression }
 EXPR : ConsPre EXPR EXPR    { Cons $2 $3 } 
@@ -48,13 +54,10 @@ EXPR : ConsPre EXPR EXPR    { Cons $2 $3 }
      | Tail EXPR            { Tl $2      }
      | IsEq EXPR EXPR       { IsEq $2 $3 }
 
-COMMLIST :: { [Command] }
-COMMLIST : COMMAND SemiCo COMMLIST { $1 : $3 }
-         | {- empty -}             { []      }
-
 COMMAND :: { Command }
-COMMAND : While EXPR Do OpenCur COMMLIST ClosCur { While $2 $5  }
-        | Var Assign EXPR                        { Assign $1 $3 }
+COMMAND : COMMAND SemiCo COMMAND                { Compos $1 $3 }
+        | Var Assign EXPR                       { Assign $1 $3 }
+        | While EXPR Do OpenCur COMMAND ClosCur { While  $2 $5 }
 
 {
 parseError :: [Token] -> a

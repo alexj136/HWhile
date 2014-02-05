@@ -8,19 +8,17 @@ import qualified Data.Map as M
 type Store = M.Map String Expression
 
 evalProg :: Expression -> Program -> Expression
-evalProg input (Program r cs w) = evalExprNorm σ' w
-    where σ' = evalComms (M.singleton r input) cs
-
-evalComms :: Store -> [Command] -> Store
-evalComms σ []     = σ
-evalComms σ (c:cs) = evalComms (evalComm σ c) cs
+evalProg input (Program rd comm wrt) = evalExprNorm σ' wrt
+    where σ' = evalComm (M.singleton rd input) comm
 
 evalComm :: Store -> Command -> Store
+evalComm σ (Compos a b) = evalComm σ' b
+    where σ' = evalComm σ a
 evalComm σ (Assign v x) = M.insert v (evalExprNorm σ x) σ
-evalComm σ (While x cs) = case evalExprNorm σ x of
+evalComm σ (While  x c) = case evalExprNorm σ x of
     Nil -> σ
-    _   -> evalComm σ' (While x cs)
-        where σ' = evalComms σ cs
+    _   -> evalComm σ' (While x c)
+        where σ' = evalComm σ c
 
 evalExpr :: Store -> Expression -> Expression
 evalExpr σ expr = case expr of

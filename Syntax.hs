@@ -4,11 +4,12 @@ import qualified Data.Map as M
 
 -- Syntax definitions for while programs
 
-data Program = Program String [Command] Expression
+data Program = Program String Command Expression
     deriving Eq
 
-data Command = Assign String     Expression
-             | While  Expression [Command]
+data Command = Compos Command    Command
+             | Assign String     Expression
+             | While  Expression Command
     deriving Eq
 
 data Expression = Var  String
@@ -20,22 +21,20 @@ data Expression = Var  String
     deriving Eq
 
 instance Show Program where
-    show (Program r cs w) = "read " ++ r ++ ";\n" ++
-                           showCs 0 cs ++
-                           "write " ++ show w
+    show (Program r c w) = "read " ++ r ++ ";\n" ++
+                           (show c) ++
+                           "write " ++ (show w)
 
 instance Show Command where
     show c = showC 0 c
 
-showCs :: Int -> [Command] -> String
-showCs _ []     = ""
-showCs i (c:cs) = (tabs i) ++ show c
-                  ++ showCs i cs
-
 showC :: Int -> Command -> String
-showC i (While x cs) = (tabs i) ++ "while " ++ show x ++ " do:\n"
-                       ++ showCs (i + 1) cs
-showC i (Assign v x) = (tabs i) ++ v ++ " := " ++ show x ++ ";\n"
+showC i (While  x c) = (tabs i) ++ "while " ++ show x ++ " do{\n"
+                       ++ showC (i + 1) c
+                       ++ (tabs i) ++ "}\n"
+showC i (Assign v x) = (tabs i) ++ v ++ " := " ++ show x
+showC i (Compos a b) = (tabs i) ++ (showC i a) ++ ";\n"
+                       ++ (showC i b)
 
 tabs :: Int -> String
 tabs x | x <  0 = error "negative tabs"
