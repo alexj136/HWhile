@@ -12,9 +12,13 @@ exceptions:
  - The grammar in the lecture slides requires us to write a variable at the end
    of our programs. The parser's grammar allows us to put an expression here, as
    well as a variable. This makes constant functions easier to write, e.g:
+
        read X; Y := nil . nil; write Y
+
    can be written as
+
        read X; ; write nil . nil
+
  - Integer literals can be used - the parser will convert them into the
    appropriate tree before execution
 The lexer also provides us with some nice things:
