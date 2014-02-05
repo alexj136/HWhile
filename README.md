@@ -3,6 +3,7 @@ HWhile is an interpreter for the While language written in Haskell.
 See 'example.while' for a simple example.
 
 SYNTAX
+
 The parser uses a grammar identical to that in the lecture slides, with four
 exceptions:
  - An infix constructor: You can write 'a . b' as well as 'cons a b', if you
@@ -20,4 +21,9 @@ The lexer also provides us with some nice things:
  - A '#' will tell the lexer to ignore the rest of the line, e.g. write a
    comment
  - the head & tail functions can be written fully ('head' or 'tail') or in the
-   abbreviated fashion ('hd' and 'tl').
+   abbreviated fashion ('hd' and 'tl')
+
+SEMANTICS
+
+The semantics of this implementation match exactly those specified in the
+lecture slides.
