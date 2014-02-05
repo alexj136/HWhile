@@ -21,6 +21,7 @@ exceptions:
 
  - Integer literals can be used - the parser will convert them into the
    appropriate tree before execution
+
 The lexer also provides us with some nice things:
  - A '#' will tell the lexer to ignore the rest of the line, e.g. write a
    comment
