@@ -18,11 +18,11 @@ well as a variable. This makes it possible to write constant functions, or
 functions that modify the returned value at the end of the program, in a more
 obvious way, e.g:
 
-       read X; Y := nil . nil; write Y
+    read X; Y := nil . nil; write Y
 
 can be written as
 
-       read X; X := X; write nil . nil
+    read X; X := X; write nil . nil
 
 - Integer literals can be used - the parser will convert them into the
 appropriate tree before execution
