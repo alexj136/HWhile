@@ -6,14 +6,17 @@ SYNTAX
 
 The parser uses a grammar identical to that in the lecture slides, with four
 exceptions:
- - An infix constructor: You can write 'a . b' as well as 'cons a b', if you
-   prefer
+
+ - You can use an infix constructor: You can write 'a . b' as well as
+   'cons a b', if you prefer
+
  - Brackets can be used to enforce a particular association
+
  - The grammar in the lecture slides requires us to write a variable at the end
    of our programs. The parser's grammar allows us to put an expression here, as
    well as a variable. This makes it possible to write constant functions, or
-   functions that modify the returned value at the end of the program, easier to
-   write, e.g:
+   functions that modify the returned value at the end of the program, in a more
+   obvious way, e.g:
 
        read X; Y := nil . nil; write Y
 
@@ -25,12 +28,33 @@ exceptions:
    appropriate tree before execution
 
 The lexer also provides us with some nice things:
+
  - A '#' will tell the lexer to ignore the rest of the line, e.g. write a
    comment
+
  - the head & tail functions can be written fully ('head' or 'tail') or in the
    abbreviated fashion ('hd' and 'tl')
 
 SEMANTICS
 
 The semantics of this implementation match exactly those specified in the
-lecture slides.
+lecture slides (in theory - there will inevitably be bugs).
+
+INSTRUCTIONS
+
+To compile for usage purposes, cd into the repo directory and run
+
+    ghc --make Main -o hwhile
+
+This should work on any computer with GHC installed. You can then run
+
+    WINDOWS: hwhile <FLAG> <FILE> <EXPR>
+       UNIX: ./hwhile <FLAG> <FILE> <EXPR>
+
+to invoke the interpreter. If you want to modify the source code, you will need
+to have the following installed:
+    
+    - make
+    - HUnit (Haskell unit testing library)
+    - alex (Haskell lexer generator)
+    - happy (Haskell parser generator)

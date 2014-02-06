@@ -55,7 +55,30 @@ data Token
     | TokenWrite   (Int, Int)
     | TokenVar     (Int, Int) String
     | TokenInt     (Int, Int) String
-    deriving (Show, Eq)
+    deriving Show
+
+-- The default implementation is not quite sufficient - it is more useful for
+-- tokens to be equal regardless of position
+instance Eq Token where
+    (==) (TokenConsInf _  ) (TokenConsInf _  ) = True
+    (==) (TokenOpenBrc _  ) (TokenOpenBrc _  ) = True
+    (==) (TokenClosBrc _  ) (TokenClosBrc _  ) = True
+    (==) (TokenOpenCur _  ) (TokenOpenCur _  ) = True
+    (==) (TokenClosCur _  ) (TokenClosCur _  ) = True
+    (==) (TokenIsEq    _  ) (TokenIsEq    _  ) = True
+    (==) (TokenAssign  _  ) (TokenAssign  _  ) = True
+    (==) (TokenNil     _  ) (TokenNil     _  ) = True
+    (==) (TokenSemiCo  _  ) (TokenSemiCo  _  ) = True
+    (==) (TokenConsPre _  ) (TokenConsPre _  ) = True
+    (==) (TokenHead    _  ) (TokenHead    _  ) = True
+    (==) (TokenTail    _  ) (TokenTail    _  ) = True
+    (==) (TokenWhile   _  ) (TokenWhile   _  ) = True
+    (==) (TokenDo      _  ) (TokenDo      _  ) = True
+    (==) (TokenRead    _  ) (TokenRead    _  ) = True
+    (==) (TokenWrite   _  ) (TokenWrite   _  ) = True
+    (==) (TokenVar     _ a) (TokenVar     _ b) = a == b
+    (==) (TokenInt     _ a) (TokenInt     _ b) = a == b
+    (==) _                  _                  = False
 
 -- Get the number of lines into the file that the text produced this token
 -- occurred

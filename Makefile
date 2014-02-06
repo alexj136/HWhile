@@ -2,6 +2,8 @@ MODULES  = Syntax Lexer Parser Interpreter
 
 Main: $(MODULES:=.hs) Main.hs
 	@ghc --make Main -o hwhile
+	@echo "Running Unit Tests"
+	@runhaskell UnitTests.hs
 
 Lexer.hs: Lexer.x
 	@echo "Generating Lexer"
