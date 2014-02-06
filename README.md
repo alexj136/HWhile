@@ -16,7 +16,7 @@ if you prefer
 of our programs. The parser's grammar allows us to put an expression here, as
 well as a variable. This makes it possible to write constant functions, or
 functions that modify the returned value at the end of the program, in a more
-obvious way, e.g:
+obvious way, e.g
 
     read X; Y := nil . nil; write Y
 
