@@ -1,0 +1,17 @@
+# Program that takes a list of numbers and returns the sum of those numbers. If
+# the input is invalid, the output is undefined (may be a number, may not)
+
+read LIST;
+SUM := 0;
+while LIST do {
+    # Remove the head of the list and assign it to ELEM
+    ELEM := hd LIST;
+    LIST := tl LIST;
+
+    # Add ELEM to SUM
+    while ELEM do {
+        SUM := ( nil . SUM );
+        ELEM := tl ELEM
+    }
+};
+write SUM

@@ -5,6 +5,6 @@ X := hd XY;
 Y := tl XY;
 while X do {
     Y := ( nil . Y );
-X := tl X # Indentation doesn't matter
+    X := tl X
 };
 write Y

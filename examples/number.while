@@ -1,0 +1,26 @@
+# Program that takes a while tree and returns 1 if the tree is a natural number,
+# and 0 otherwise
+
+read X;
+RESULT := 1;
+while X do {
+
+    # Check if the head of X is nil - if it isn't then we haven't got a number
+    # If it isn't nil, we enter the loop (which we only ever do once because we
+    # set HEADX to nil immidiately) where we set the result as 0 because we've
+    # shown that we don't have a number. Set X to nil so that we stop the outer
+    # loop and just return our result
+    HEADX := hd X;
+    while HEADX do {
+        RESULT := 0;
+        HEADX := nil;
+        X := nil
+    };
+    
+    # If we didn't set X straight to zero, make X the tail of X so that we
+    # progress for the next iteration
+    while X do {
+        X := tl X
+    }
+};
+write RESULT

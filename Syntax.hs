@@ -65,10 +65,7 @@ parseInt = parseIntAcc 0
     where
     parseIntAcc :: Int -> Expression -> Maybe Int
     parseIntAcc acc Nil          = Just acc
-    parseIntAcc acc (Cons Nil x) = do
-        { next <- parseIntAcc (acc + 1) x
-        ; return next
-        }
+    parseIntAcc acc (Cons Nil x) = parseIntAcc (acc + 1) x
     parseIntAcc acc _            = Nothing
 
 -- Convert a while expression encoded list into a haskell list
