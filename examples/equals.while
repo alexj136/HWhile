@@ -4,9 +4,16 @@
 
 read XY;
 
-# TODOLIST is a list of pairs of trees for us to check the equality of
-TODOLIST := cons XY nil;
-RESULT := 1;
+# Initally assume that the input is invalid (i.e. nil)
+TODOLIST := nil;
+RESULT := 0;
+
+# If the input IS valid, we will enter this loop, so set up to run the algorithm
+while XY do {
+    RESULT := 1;
+    TODOLIST := cons XY nil;
+    XY := nil
+};
 
 while TODOLIST do {
 

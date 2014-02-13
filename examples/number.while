@@ -19,8 +19,6 @@ while X do {
     
     # If we didn't set X straight to zero, make X the tail of X so that we
     # progress for the next iteration
-    while X do {
-        X := tl X
-    }
+    X := tl X
 };
 write RESULT
