@@ -18,6 +18,9 @@ tokens :-
     \)                    { \p s -> TokenClosBrc (pos p)   }
     \{                    { \p s -> TokenOpenCur (pos p)   }
     \}                    { \p s -> TokenClosCur (pos p)   }
+    \[                    { \p s -> TokenOpenSqu (pos p)   }
+    \]                    { \p s -> TokenClosSqu (pos p)   }
+    \,                    { \p s -> TokenComma   (pos p)   }
     \?\=                  { \p s -> TokenIsEq    (pos p)   }
     \:\=                  { \p s -> TokenAssign  (pos p)   }
     "nil"                 { \p s -> TokenNil     (pos p)   }
@@ -42,6 +45,9 @@ data Token
     | TokenClosBrc (Int, Int)
     | TokenOpenCur (Int, Int)
     | TokenClosCur (Int, Int)
+    | TokenOpenSqu (Int, Int)
+    | TokenClosSqu (Int, Int)
+    | TokenComma   (Int, Int)
     | TokenIsEq    (Int, Int)
     | TokenAssign  (Int, Int)
     | TokenNil     (Int, Int)
@@ -65,6 +71,9 @@ instance Eq Token where
     (==) (TokenClosBrc _  ) (TokenClosBrc _  ) = True
     (==) (TokenOpenCur _  ) (TokenOpenCur _  ) = True
     (==) (TokenClosCur _  ) (TokenClosCur _  ) = True
+    (==) (TokenOpenSqu _  ) (TokenOpenSqu _  ) = True
+    (==) (TokenClosSqu _  ) (TokenClosSqu _  ) = True
+    (==) (TokenComma   _  ) (TokenComma   _  ) = True
     (==) (TokenIsEq    _  ) (TokenIsEq    _  ) = True
     (==) (TokenAssign  _  ) (TokenAssign  _  ) = True
     (==) (TokenNil     _  ) (TokenNil     _  ) = True
@@ -89,6 +98,9 @@ lineNo tok = case tok of
     TokenClosBrc (x, _)   -> x
     TokenOpenCur (x, _)   -> x
     TokenClosCur (x, _)   -> x
+    TokenOpenSqu (x, _)   -> x
+    TokenClosSqu (x, _)   -> x
+    TokenComma   (x, _)   -> x
     TokenIsEq    (x, _)   -> x
     TokenAssign  (x, _)   -> x
     TokenNil     (x, _)   -> x
@@ -112,6 +124,9 @@ charNo tok = case tok of
     TokenClosBrc (_, x)   -> x
     TokenOpenCur (_, x)   -> x
     TokenClosCur (_, x)   -> x
+    TokenOpenSqu (_, x)   -> x
+    TokenClosSqu (_, x)   -> x
+    TokenComma   (_, x)   -> x
     TokenIsEq    (_, x)   -> x
     TokenAssign  (_, x)   -> x
     TokenNil     (_, x)   -> x
@@ -134,6 +149,9 @@ tokStr tok = case tok of
     TokenClosBrc (_, _)   -> "')'"
     TokenOpenCur (_, _)   -> "'{'"
     TokenClosCur (_, _)   -> "'}'"
+    TokenOpenSqu (_, _)   -> "'['"
+    TokenClosSqu (_, _)   -> "']'"
+    TokenComma   (_, _)   -> "','"
     TokenIsEq    (_, _)   -> "'?='"
     TokenAssign  (_, _)   -> "':='"
     TokenNil     (_, _)   -> "'nil'"
