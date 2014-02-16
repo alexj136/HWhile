@@ -59,13 +59,12 @@ EXPR : ConsPre EXPR EXPR    { Cons $2 $3         }
      | EXPLIST              { listToWhileList $1 }
 
 EXPLIST :: { [Expression] }
-EXPLIST : OpenSqu ClosSqu        { []      }
-        | OpenSqu EXPR ClosSqu   { [$2]    }
-        | OpenSqu EXPR INNERLIST { $2 : $3 }
+EXPLIST : OpenSqu ClosSqu       { []      }
+        | OpenSqu EXPR RESTLIST { $2 : $3 }
 
-INNERLIST :: { [Expression] }
-INNERLIST : Comma EXPR INNERLIST { $2 : $3 }
-          | ClosSqu              { []      }
+RESTLIST :: { [Expression] }
+RESTLIST : Comma EXPR RESTLIST { $2 : $3 }
+         | ClosSqu             { []      }
 
 COMMAND :: { Command }
 COMMAND : COMMAND SemiCo COMMAND                { Compos $1 $3 }
