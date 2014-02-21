@@ -36,6 +36,9 @@ import Syntax
     Tail    { TokenTail    p    }
     While   { TokenWhile   p    }
     Do      { TokenDo      p    }
+    If      { TokenIf      p    }
+    Then    { TokenThen    p    }
+    Else    { TokenElse    p    }
     Read    { TokenRead    p    }
     Write   { TokenWrite   p    }
     Var     { TokenVar     p $$ }
@@ -70,6 +73,7 @@ COMMAND :: { Command }
 COMMAND : COMMAND SemiCo COMMAND                { Compos $1 $3 }
         | Var Assign EXPR                       { Assign $1 $3 }
         | While EXPR Do OpenCur COMMAND ClosCur { While  $2 $5 }
+        | If EXPR Then OpenCur COMMAND ClosCur Else OpenCur COMMAND ClosCur { transCond $2 $5 $9 }
 
 {
 parseError :: [Token] -> a
@@ -97,4 +101,20 @@ intToExp n acc = intToExp (n - 1) (Cons Nil acc)
 listToWhileList :: [Expression] -> Expression
 listToWhileList (h:t) = Cons h (listToWhileList t)
 listToWhileList []    = Nil
+
+-- Translate a parsed if-then-else into pure while
+transCond :: Expression -> Command -> Command -> Command
+transCond gd c1 c2 =
+    Compos (Compos (Compos (Compos (Compos
+        (Assign "+NOT+EXP+STACK+" (Cons (Cons Nil Nil) (Var "+NOT+EXP+STACK+")))
+        (Assign "+EXP+VAL+STACK+" (Cons gd (Var "+EXP+VAL+STACK+"))))
+        (While (Hd (Var "+EXP+VAL+STACK+")) (Compos (Compos
+            (Assign "+EXP+VAL+STACK+" (Cons Nil (Tl (Var "+EXP+VAL+STACK+"))))
+            (Assign "+NOT+EXP+STACK+" (Cons Nil (Tl (Var "+NOT+EXP+STACK+")))))
+            c1)))
+        (While (Hd (Var "+NOT+EXP+STACK+")) (Compos
+            (Assign "+NOT+EXP+STACK+" (Cons Nil (Tl (Var "+NOT+EXP+STACK+"))))
+            c2)))
+        (Assign "+NOT+EXP+STACK+" (Tl (Var "+NOT+EXP+STACK+"))))
+        (Assign "+EXP+VAL+STACK+" (Tl (Var "+EXP+VAL+STACK+")))
 }

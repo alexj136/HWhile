@@ -32,6 +32,9 @@ tokens :-
     "tail"                { \p s -> TokenTail    (pos p)   }
     "while"               { \p s -> TokenWhile   (pos p)   }
     "do"                  { \p s -> TokenDo      (pos p)   }
+    "if"                  { \p s -> TokenIf      (pos p)   }
+    "then"                { \p s -> TokenThen    (pos p)   }
+    "else"                { \p s -> TokenElse    (pos p)   }
     "read"                { \p s -> TokenRead    (pos p)   }
     "write"               { \p s -> TokenWrite   (pos p)   }
     $alpha[$alnum \_ \']* { \p s -> TokenVar     (pos p) s }
@@ -57,6 +60,9 @@ data Token
     | TokenTail    (Int, Int)
     | TokenWhile   (Int, Int)
     | TokenDo      (Int, Int)
+    | TokenIf      (Int, Int)
+    | TokenThen    (Int, Int)
+    | TokenElse    (Int, Int)
     | TokenRead    (Int, Int)
     | TokenWrite   (Int, Int)
     | TokenVar     (Int, Int) String
@@ -83,6 +89,9 @@ instance Eq Token where
     (==) (TokenTail    _  ) (TokenTail    _  ) = True
     (==) (TokenWhile   _  ) (TokenWhile   _  ) = True
     (==) (TokenDo      _  ) (TokenDo      _  ) = True
+    (==) (TokenIf      _  ) (TokenIf      _  ) = True
+    (==) (TokenThen    _  ) (TokenThen    _  ) = True
+    (==) (TokenElse    _  ) (TokenElse    _  ) = True
     (==) (TokenRead    _  ) (TokenRead    _  ) = True
     (==) (TokenWrite   _  ) (TokenWrite   _  ) = True
     (==) (TokenVar     _ a) (TokenVar     _ b) = a == b
@@ -110,6 +119,9 @@ lineNo tok = case tok of
     TokenTail    (x, _)   -> x
     TokenWhile   (x, _)   -> x
     TokenDo      (x, _)   -> x
+    TokenIf      (x, _)   -> x
+    TokenThen    (x, _)   -> x
+    TokenElse    (x, _)   -> x
     TokenRead    (x, _)   -> x
     TokenWrite   (x, _)   -> x
     TokenVar     (x, _) _ -> x
@@ -136,6 +148,9 @@ charNo tok = case tok of
     TokenTail    (_, x)   -> x
     TokenWhile   (_, x)   -> x
     TokenDo      (_, x)   -> x
+    TokenIf      (_, x)   -> x
+    TokenThen    (_, x)   -> x
+    TokenElse    (_, x)   -> x
     TokenRead    (_, x)   -> x
     TokenWrite   (_, x)   -> x
     TokenVar     (_, x) _ -> x
@@ -161,6 +176,9 @@ tokStr tok = case tok of
     TokenTail    (_, _)   -> "'tail'"
     TokenWhile   (_, _)   -> "'while'"
     TokenDo      (_, _)   -> "'do'"
+    TokenIf      (_, _)   -> "'if'"
+    TokenThen    (_, _)   -> "'then'"
+    TokenElse    (_, _)   -> "'else'"
     TokenRead    (_, _)   -> "'read'"
     TokenWrite   (_, _)   -> "'write'"
     TokenVar     (_, _) s -> "variable '" ++ s ++ "'"
