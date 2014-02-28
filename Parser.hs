@@ -747,7 +747,28 @@ listToWhileList :: [Expression] -> Expression
 listToWhileList (h:t) = Cons h (listToWhileList t)
 listToWhileList []    = Nil
 
--- Translate a parsed if-then-else into pure while
+{-- Translate a parsed if-then-else into pure while. The while code below shows
+    how these are translated into pure while - stacks are used to ensure that
+    these can be nested recursively.
+
+        _NOT_EXP_VAL_STACK__ := cons cons nil nil _NOT_EXP_VAL_STACK__;
+        _EXP_VAL_STACK_      := cons E _EXP_VAL_STACK_;
+        while hd _EXP_VAL_STACK_ do
+            { _EXP_VAL_STACK_      := cons nil tl _EXP_VAL_STACK_
+            ; _NOT_EXP_VAL_STACK__ := cons nil tl _NOT_EXP_VAL_STACK__
+            ; C1
+            }
+        while hd _NOT_EXP_VAL_STACK__ do
+            { _NOT_EXP_VAL_STACK__ := cons nil tl _NOT_EXP_VAL_STACK__
+            ; C2
+            }
+        _NOT_EXP_VAL_STACK__ := tl _NOT_EXP_VAL_STACK__;
+        _EXP_VAL_STACK_      := tl _EXP_VAL_STACK_;
+
+    The variable names used for these stacks will not be accepted by the lexer,
+    so they are guaranteed not to interfere with the programmer's choice of
+    variable names.
+--}
 transCond :: Expression -> Command -> Command -> Command
 transCond gd c1 c2 =
     Compos (Compos (Compos (Compos (Compos

@@ -2,7 +2,9 @@ module Syntax where
 
 import qualified Data.Map as M
 
--- Syntax definitions for while programs
+-- Syntax definitions for while programs. The data types below match the
+-- context-free grammar in Neil Jones' book, page 32. This module also contains
+-- functions for printing syntax trees.
 
 data Program = Program String Command Expression
     deriving Eq
