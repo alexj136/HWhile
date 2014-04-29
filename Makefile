@@ -1,4 +1,4 @@
-MODULES  = Syntax Lexer Parser Interpreter
+MODULES  = Syntax Lexer Parser Interpreter CodeGen
 
 Main: $(MODULES:=.hs) Main.hs
 	@ghc --make Main -o hwhile

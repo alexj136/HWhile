@@ -5,6 +5,7 @@ import Lexer
 import qualified Parser as P
 import qualified Syntax as S
 import qualified Interpreter as I
+import qualified CodeGen as C
 
 main = runTestTT $ TestList $ concat $
     [ lexerTests

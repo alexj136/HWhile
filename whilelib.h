@@ -32,5 +32,6 @@ Node *takeCons(Node *left, Node *right);
 Node *takeHead(Node *root);
 Node *takeTail(Node *root);
 bool treeEqual(Node* a, Node *b);
+Node **setUpVars(int maxVarIdx);
 
 #endif

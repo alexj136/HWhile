@@ -4,6 +4,7 @@ import qualified Lexer as L
 import qualified Parser as P
 import qualified Syntax as S
 import qualified Interpreter as I
+import qualified CodeGen as C
 import System.Environment
 import Data.List (intersperse)
 

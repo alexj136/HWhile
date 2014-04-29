@@ -74,7 +74,13 @@ Node *takeCons(Node *left, Node *right) {
  * can be safely freed without affecting the returned tree.
  */
 Node *takeHead(Node *root) {
-    return copyTree(root->left);
+    if(root->nodeType == nil) {
+        return newNil();
+    }
+    else {
+        assert(root->nodeType == cons);
+        return copyTree(root->left);
+    }
 }
 
 /*
@@ -82,7 +88,13 @@ Node *takeHead(Node *root) {
  * can be safely freed without affecting the returned tree.
  */
 Node *takeTail(Node *root) {
-    return copyTree(root->right);
+    if(root->nodeType == nil) {
+        return newNil();
+    }
+    else {
+        assert(root->nodeType == cons);
+        return copyTree(root->right);
+    }
 }
 
 /*
@@ -95,4 +107,16 @@ bool treeEqual(Node* a, Node *b) {
     else {
         return treeEqual(a->left, b->left) && treeEqual(a->right, b->right);
     }
+}
+
+/*
+ * Set up the array containing the variables
+ */
+Node **setUpVars(int maxVarIdx) {
+    Node **varArr = ckMalloc((maxVarIdx + 1) * sizeof(Node*));
+    int i;
+    for(i = 0; i <= maxVarIdx; i++) {
+        varArr[i] = newNil();
+    }
+    return varArr;
 }
