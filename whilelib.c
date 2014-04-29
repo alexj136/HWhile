@@ -26,7 +26,7 @@ Node *newNil() {
  * the returned trees - they are not copied, so freeing a tree given as an
  * argument to this function will cause crazy errors. Don't do it.
  */
-Node *build(Node *left, Node *right) {
+Node *newCons(Node *left, Node *right) {
     Node *consNode = ckMalloc(sizeof(Node));
     consNode->nodeType = cons;
     consNode->left = left;
@@ -57,16 +57,8 @@ Node *copyTree(Node *root) {
         return newNil();
     }
     else {
-        return build(copyTree(root->left), copyTree(root->right));
+        return newCons(copyTree(root->left), copyTree(root->right));
     }
-}
-
-/*
- * Build an entirely new tree that is the cons of the two given trees. The given
- * subtrees can be safely freed without affecting the returned tree.
- */
-Node *takeCons(Node *left, Node *right) {
-    return build(copyTree(left), copyTree(right));
 }
 
 /*
@@ -110,13 +102,41 @@ bool treeEqual(Node* a, Node *b) {
 }
 
 /*
- * Set up the array containing the variables
+ * Set up the array containing the variables.
  */
-Node **setUpVars(int maxVarIdx) {
-    Node **varArr = ckMalloc((maxVarIdx + 1) * sizeof(Node*));
+Node **setUpStore(int maxVarIdx) {
+    Node **store = ckMalloc((maxVarIdx + 1) * sizeof(Node*));
     int i;
     for(i = 0; i <= maxVarIdx; i++) {
-        varArr[i] = newNil();
+        store[i] = newNil();
     }
-    return varArr;
+    return store;
+}
+
+/*
+ * Free all variables in the store and the store itself.
+ */
+void freeStore(int maxVarIdx, Node **store) {
+    int i;
+    for(i = 0; i <= maxVarIdx; i++) {
+        freeTree(store[i]);
+    }
+    free(store);
+}
+
+/*
+ * Print a tree in linear notation.
+ */
+void printTreeLinear(Node *node) {
+    if(node->nodeType == nil) {
+        printf("nil");
+    }
+    else {
+        assert(node->nodeType == cons);
+        putchar('(');
+        printTreeLinear(node->left);
+        putchar('.');
+        printTreeLinear(node->right);
+        putchar(')');
+    }
 }

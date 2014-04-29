@@ -35,56 +35,57 @@ varMapExpr vm expr = case expr of
     Tl   x                -> varMapExpr vm x
     IsEq a b              -> varMapExpr (varMapExpr vm a) b
 
-codeGenProg :: Program -> [String]
-codeGenProg (Program rd comm wrt) =
-    [  ""
-    ,  ""
-    ,  "#include <stdio.h>"
-    ,  "#include \"whilelib.h\""
-    ,  "int main() {"
-    ,  "    Node *tmp = NULL;"
-    ,  "    Node **store = setUpVars(" ++ show (maximum (M.elems vm)) ++ ");"
-    ] ++ codeGenComm vm comm ++
-    [  ""
-    ,  "}"
+codeGenProg :: Program -> String
+codeGenProg (Program rd comm wrt) = concat $ intersperse "\n" $
+    [ "#include <stdio.h>"
+    , "#include \"whilelib.h\""
+    , "int main() {"
+    , "    // Set up variables"
+    , "    Node *tmp = NULL;"
+    , "    Node **store = setUpStore(" ++ show (maximum (M.elems vm)) ++ ");"
+    , ""
+    ] ++ codeGenComm 1 vm comm ++
+    [ "    printTreeLinear(" ++ codeGenExpr vm wrt ++ ");"
+    , "    putchar('\\n');"
+    , "    freeStore(" ++ show (maximum (M.elems vm)) ++ ", store);"
+    , "    return 0;"
+    , "}"
     ]
-  where
-    vm = varMapProg (Program rd comm wrt)
+    where vm = varMapProg (Program rd comm wrt)
 
-codeGenComm :: VarMap -> Command -> [String]
-codeGenComm vm comm = case comm of
+codeGenComm :: Int -> VarMap -> Command -> [String]
+codeGenComm i vm comm = case comm of
     While  x c ->
-        [  "// begin compile while " ++ show x ++ " do"
-        ,  "tmp = " ++ codeGenExpr vm x ++ ";"
-        ,  "while(tmp->nodeType == cons) {"
-        ,  "free(tmp);"
-        ,  "tmp = NULL;"
-        , codeGenComm vm c
-        ,  "tmp = " ++ codeGenExpr vm x ++ ";"
-        ,  "}"
-        ,  "free(tmp);"
-        ,  "tmp = NULL;"
-        , "// end compile while"
+        [ tabs i ++ "// begin compile while " ++ show x ++ " do"
+        , tabs i ++ "tmp = " ++ gen x ++ ";"
+        , tabs i ++ "while(tmp->nodeType == cons) {"
+        , tabs i ++ "freeTree(tmp);"
+        , tabs i ++ "tmp = NULL;"
+        ] ++ codeGenComm (i + 1) vm c ++
+        [ tabs i ++ "tmp = " ++ gen x ++ ";"
+        , tabs i ++ "}"
+        , tabs i ++ "freeTree(tmp);"
+        , tabs i ++ "tmp = NULL;"
+        , tabs i ++ "// end compile while"
         ]
     Assign v x ->
-        [  "// compile " ++ v ++ " := " ++ show x
-        ,  "tmp = store[" ++ show (vm ! v) ++ "];"
-        ,  "store[" ++ show (vm ! v) ++ "] = " ++ codeGenExpr vm x ++ ";"
-        ,  "freeTree(tmp);"
-        ,  "tmp = NULL;"
+        [ tabs i ++ "// compile " ++ v ++ " := " ++ show x
+        , tabs i ++ "tmp = store[" ++ show (vm M.! v) ++ "];"
+        , tabs i ++ "store[" ++ show (vm M.! v) ++ "] = " ++ gen x ++ ";"
+        , tabs i ++ "freeTree(tmp);"
+        , tabs i ++ "tmp = NULL;"
+        , ""
         ]
-    Compos a b ->
-        [ codeGenComm vm a
-        , codeGenComm vm b
-        ]
+    Compos a b -> codeGenComm i vm a ++ codeGenComm i vm b
+    where gen = codeGenExpr vm
 
 codeGenExpr :: VarMap -> Expression -> String
 codeGenExpr vm expr = case expr of
-    Var  s   -> "copyTree(store[" ++ show (vm ! s) ++ "])"
+    Var  s   -> "copyTree(store[" ++ show (vm M.! s) ++ "])"
     Nil      -> "newNil()"
-    Cons a b -> "takeCons(" ++ gen a ++ ", " ++ gen b ++ ")"
+    Cons a b -> "newCons(" ++ gen a ++ ", " ++ gen b ++ ")"
     Hd   x   -> "takeHead(" ++ gen x ++ ")"
     Tl   x   -> "takeTail(" ++ gen x ++ ")"
     IsEq a b -> "treeEqual(" ++ gen a ++ ", " ++ gen b ++ ")?\
-        \takeCons(newNil(), newNil()):newNil()"
-  where gen = codeGenExpr vm
+        \newCons(newNil(), newNil()):newNil()"
+    where gen = codeGenExpr vm

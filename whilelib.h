@@ -25,13 +25,14 @@ struct Node {
 
 void *ckMalloc(int size);
 Node *newNil();
-Node *build(Node *left, Node *right);
+Node *newCons(Node *left, Node *right);
 void freeTree(Node *root);
 Node *copyTree(Node *root);
-Node *takeCons(Node *left, Node *right);
 Node *takeHead(Node *root);
 Node *takeTail(Node *root);
-bool treeEqual(Node* a, Node *b);
-Node **setUpVars(int maxVarIdx);
+bool treeEqual(Node *a, Node *b);
+Node **setUpStore(int maxVarIdx);
+void freeStore(int maxVarIdx, Node **store);
+void printTreeLinear(Node *node);
 
 #endif
