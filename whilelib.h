@@ -30,6 +30,7 @@ void freeTree(Node *root);
 Node *copyTree(Node *root);
 Node *takeHead(Node *root);
 Node *takeTail(Node *root);
+Node *doEquals(Node *a, Node *b);
 bool treeEqual(Node *a, Node *b);
 Node **setUpStore(int maxVarIdx);
 void freeStore(int maxVarIdx, Node **store);

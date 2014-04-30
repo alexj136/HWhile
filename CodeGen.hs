@@ -86,6 +86,5 @@ codeGenExpr vm expr = case expr of
     Cons a b -> "newCons(" ++ gen a ++ ", " ++ gen b ++ ")"
     Hd   x   -> "takeHead(" ++ gen x ++ ")"
     Tl   x   -> "takeTail(" ++ gen x ++ ")"
-    IsEq a b -> "treeEqual(" ++ gen a ++ ", " ++ gen b ++ ")?\
-        \newCons(newNil(), newNil()):newNil()"
+    IsEq a b -> "doEquals(" ++ gen a ++ ", " ++ gen b ++ ");"
     where gen = codeGenExpr vm

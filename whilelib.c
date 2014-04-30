@@ -57,7 +57,7 @@ Node *copyTree(Node *root) {
         return newNil();
     }
     else {
-        assert(root->nodeType == cons)
+        assert(root->nodeType == cons);
         return newCons(copyTree(root->left), copyTree(root->right));
     }
 }
@@ -72,7 +72,7 @@ Node *takeHead(Node *root) {
     }
     else {
         assert(root->nodeType == cons);
-        return copyTree(root->left);
+        return root->left;
     }
 }
 
@@ -86,19 +86,35 @@ Node *takeTail(Node *root) {
     }
     else {
         assert(root->nodeType == cons);
-        return copyTree(root->right);
+        return root->right;
+    }
+}
+
+/*
+ * Implementation of the while ?= syntax - if two trees are equal, evaluate to
+ * cons nil nil (or anything non-nil), otherwise evaluate to nil.
+ */
+Node *doEquals(Node *a, Node *b) {
+    if(treeEqual(a, b)) {
+        return newCons(newNil(), newNil());
+    }
+    else {
+        return newNil();
     }
 }
 
 /*
  * Determine whether or not two trees have the exact same structure.
  */
-bool treeEqual(Node* a, Node *b) {
+bool treeEqual(Node *a, Node *b) {
     if(a->nodeType == nil && b->nodeType == nil) {
         return true;
     }
-    else {
+    else if(a->nodeType == cons && b->nodeType == cons) {
         return treeEqual(a->left, b->left) && treeEqual(a->right, b->right);
+    }
+    else {
+        return false;
     }
 }
 
