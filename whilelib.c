@@ -57,6 +57,7 @@ Node *copyTree(Node *root) {
         return newNil();
     }
     else {
+        assert(root->nodeType == cons)
         return newCons(copyTree(root->left), copyTree(root->right));
     }
 }
