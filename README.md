@@ -3,7 +3,8 @@ HWhile is an interpreter for the While language written in Haskell. The While
 language is a simple imperative programming language, with while-loops,
 assignment, and a single data type: binary trees. The language was concieved by
 Neil D. Jones in his book: Computability and Complexity from a Programming
-Perspective, available [here](http://www.diku.dk/~neil/Comp2book.html). See the
+Perspective, available [here](http://www.diku.dk/~neil/Comp2book.html). This
+implementation is loosely based on the language described in the book. See the
 examples directory for some example code.
 
 ### Syntax
@@ -35,7 +36,7 @@ The grammar below gives exactly the concrete syntax of this implementation:
 
     NAT  ::= [0-9]+
 
-    ID   ::= [a-zA-Z0-9_']+
+    ID   ::= [a-zA-Z_'][a-zA-Z0-9_']*
 
 There are several additions to the 'pure' syntax given on page 32 of Neil Jones'
 book:
