@@ -6,21 +6,24 @@ import qualified Data.Map as M
 -- context-free grammar in Neil Jones' book, page 32. This module also contains
 -- functions for printing syntax trees.
 
-data Program = Program String Command Expression
-    deriving Eq
+data Program
+    = Program String Command Expression
+    deriving (Eq, Ord)
 
-data Command = Compos Command    Command
-             | Assign String     Expression
-             | While  Expression Command
-    deriving Eq
+data Command
+    = Compos Command    Command
+    | Assign String     Expression
+    | While  Expression Command
+    deriving (Eq, Ord)
 
-data Expression = Var  String
-                | Nil
-                | Cons Expression Expression
-                | Hd   Expression
-                | Tl   Expression
-                | IsEq Expression Expression
-    deriving Eq
+data Expression
+    = Var  String
+    | Nil
+    | Cons Expression Expression
+    | Hd   Expression
+    | Tl   Expression
+    | IsEq Expression Expression
+    deriving (Eq, Ord)
 
 instance Show Program where
     show (Program r c w) = "read " ++ r ++ ";\n"

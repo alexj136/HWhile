@@ -1,11 +1,8 @@
 module HWhileUtils where
 
 newtype Name a = Name a
+    deriving (Eq, Ord)
 
-instance Show (Name String) where
+instance Show Name where
     show :: Name String -> String
-    show (Name s) = s
-
-instance Show (Name Int) where
-    show :: Name Int -> String
-    show (Name x) = "Var " ++ show x
+    show (Name s) = show s
