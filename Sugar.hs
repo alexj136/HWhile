@@ -7,16 +7,45 @@ module Sugar where
 
 import qualified Syntax as Pure
 
-data Command
-    = Compos Command Command
-    | Assign String Pure.Expression
-    | While  Pure.Expression Command
-    | IfElse Pure.Expression Command Command
-    | PMatch Pure.Expression [(Pure.Expression, Command)]
+data SuProgram = SuProgram Name SuCommand SuExpression
     deriving Eq
 
+newtype Name = Name String deriving (Eq, Ord)
+
+type SuExpression = Pure.Expression
+
+instance Show Name where
+    show (Name x) = x
+
+data SuCommand
+    = SuCompos SuCommand SuCommand
+    | SuAssign Name SuExpression
+    | SuWhile SuExpression SuCommand
+    | IfElse SuExpression SuCommand SuCommand
+    | PMatch SuExpression [(PMatchExp, SuCommand)]
+    deriving (Eq, Ord)
+
 data PMatchExp
-    = PMNil
+    = PMVar  Name
+    | PMNil
+    | PMCons PMatchExp PMatchExp
+    deriving (Eq, Ord)
+
+-- Translate a pattern match case to an if-else
+caseToIf :: SuExpression -> (PMatchExp, SuCommand) -> SuCommand
+caseToIf exp (pmExp, comm) = case pmExp of
+    PMVar name      ->
+        IfElse (Cons Nil Nil)
+            SuCompos (SuCompos
+                (SuAssign name exp)
+                comm)
+                (SuAssign name Nil) -- need to be more sophisticated. What if name is not nil before?
+            (SuAssign (Name "x") Var "x")
+    PMNil           ->
+        IfElse (IsEq exp Nil)
+            comm
+            (SuAssign (Name "x") Var "x")
+    PMCons e1 e2    ->
 
 -- Desugar a command, that is, convert it to pure while syntax
 desugar :: SuCommand -> Command
