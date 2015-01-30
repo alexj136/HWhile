@@ -22,7 +22,7 @@ data SuCommand
     | SuAssign Name SuExpression
     | SuWhile SuExpression SuCommand
     | IfElse SuExpression SuCommand SuCommand
-    | PMatch SuExpression [(PMatchExp, SuCommand)]
+    | PMatch PMatchExp [(PMatchExp, SuCommand)]
     deriving (Eq, Ord)
 
 data PMatchExp
@@ -32,14 +32,17 @@ data PMatchExp
     deriving (Eq, Ord)
 
 -- Translate a pattern match case to an if-else
-caseToIf :: SuExpression -> (PMatchExp, SuCommand) -> SuCommand
-caseToIf exp (pmExp, comm) = case pmExp of
+matchToIf :: PMatchExp -> (PMatchExp, SuCommand) -> SuCommand
+matchToIf matcher (matchee, comm) = let stack = "+PMATCH+VAR+STACK+" in case matchee of
     PMVar name      ->
         IfElse (Cons Nil Nil)
-            SuCompos (SuCompos
-                (SuAssign name exp)
-                comm)
-                (SuAssign name Nil) -- need to be more sophisticated. What if name is not nil before?
+            (composeAll
+                [ SuAssign (Name stack) (Cons (Var name) (Var stack))
+                , SuAssign name exp
+                , comm
+                , SuAssign name (Hd (Var stack)) -- need to be more sophisticated. What if name is not nil before?
+                , SuAssign (Name stack) (Tl (Var stack))
+                ])
             (SuAssign (Name "x") Var "x")
     PMNil           ->
         IfElse (IsEq exp Nil)
@@ -91,3 +94,11 @@ translateConditional guard commTrue commFalse =
             commFalse)))
         (Pure.Assign "+NOT+EXP+STACK+" (Tl (Var "+NOT+EXP+STACK+"))))
         (Pure.Assign "+EXP+VAL+STACK+" (Tl (Var "+EXP+VAL+STACK+")))
+
+composeAll :: [SuCommand] -> SuCommand
+composeAll []       = error "empty list"
+composeAll (c:cs)   = composeAllAcc c cs
+    where
+        composeAll :: SuCommand -> [SuCommand] -> SuCommand
+        composeAllAcc acc []        = acc
+        composeAllAcc acc (c:cs)    = composeAllAcc (SuCompos acc c) cs
