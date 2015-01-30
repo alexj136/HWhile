@@ -70,3 +70,21 @@ to have the following installed:
 - HUnit (Haskell unit testing library)
 - alex (Haskell lexer generator)
 - happy (Haskell parser generator)
+
+### Implementation description
+*The following description is at present a plan, rather than the actual state of
+the system.*
+
+The interpreter transforms program representation in several stages prior to
+interpretation. These stages are as follows:
+- **Lexical analysis/scanning**. This phase transforms source code programs into
+lists of tokens, where variable names are represented by strings.
+- **Name conversion**. This phase transforms the representation of variable names
+from strings to integers. A map from integer names to string names, used for 
+printing, is output along with the tokens.
+tokens. This map
+- **Parsing**. In this phase, the token list is converted into a syntax tree
+with the full complement of syntactic sugar, i.e. pattern-matching and
+conditional branching.
+- **Desugaring**. Here, pattern-matching and conditional constructs are
+converted into pure while-loops and assignments.
