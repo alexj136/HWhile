@@ -9,13 +9,13 @@ import System.Environment
 import Data.List (intersperse)
 
 readProg :: String -> S.Program
-readProg = P.parseProg . L.alexScanTokens 
+readProg = P.parseProg . L.alexScanTokens
 
 readComm :: String -> S.Command
-readComm = P.parseComm . L.alexScanTokens 
+readComm = P.parseComm . L.alexScanTokens
 
 readExpr :: String -> S.Expression
-readExpr = P.parseExpr . L.alexScanTokens 
+readExpr = P.parseExpr . L.alexScanTokens
 
 evalFromStr :: String -> String -> S.Expression
 evalFromStr argStr progStr = I.evalProg (readExpr argStr) (readProg progStr)
