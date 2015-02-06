@@ -32,6 +32,7 @@ tokens :-
     "tail"                { \p s -> TokenTail    (pos p)   }
     "while"               { \p s -> TokenWhile   (pos p)   }
     "do"                  { \p s -> TokenDo      (pos p)   }
+    "end"                 { \p s -> TokenEnd     (pos p)   }
     "if"                  { \p s -> TokenIf      (pos p)   }
     "then"                { \p s -> TokenThen    (pos p)   }
     "else"                { \p s -> TokenElse    (pos p)   }
@@ -60,6 +61,7 @@ data Token
     | TokenTail    (Int, Int)
     | TokenWhile   (Int, Int)
     | TokenDo      (Int, Int)
+    | TokenEnd     (Int, Int)
     | TokenIf      (Int, Int)
     | TokenThen    (Int, Int)
     | TokenElse    (Int, Int)
@@ -89,6 +91,7 @@ instance Eq Token where
     (==) (TokenTail    _  ) (TokenTail    _  ) = True
     (==) (TokenWhile   _  ) (TokenWhile   _  ) = True
     (==) (TokenDo      _  ) (TokenDo      _  ) = True
+    (==) (TokenEnd     _  ) (TokenEnd     _  ) = True
     (==) (TokenIf      _  ) (TokenIf      _  ) = True
     (==) (TokenThen    _  ) (TokenThen    _  ) = True
     (==) (TokenElse    _  ) (TokenElse    _  ) = True
@@ -119,6 +122,7 @@ lineNo tok = case tok of
     TokenTail    (x, _)   -> x
     TokenWhile   (x, _)   -> x
     TokenDo      (x, _)   -> x
+    TokenEnd     (x, _)   -> x
     TokenIf      (x, _)   -> x
     TokenThen    (x, _)   -> x
     TokenElse    (x, _)   -> x
@@ -148,6 +152,7 @@ charNo tok = case tok of
     TokenTail    (_, x)   -> x
     TokenWhile   (_, x)   -> x
     TokenDo      (_, x)   -> x
+    TokenEnd     (_, x)   -> x
     TokenIf      (_, x)   -> x
     TokenThen    (_, x)   -> x
     TokenElse    (_, x)   -> x
@@ -176,6 +181,7 @@ tokStr tok = case tok of
     TokenTail    (_, _)   -> "'tail'"
     TokenWhile   (_, _)   -> "'while'"
     TokenDo      (_, _)   -> "'do'"
+    TokenEnd     (_, _)   -> "'end'"
     TokenIf      (_, _)   -> "'if'"
     TokenThen    (_, _)   -> "'then'"
     TokenElse    (_, _)   -> "'else'"

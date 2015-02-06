@@ -65,7 +65,7 @@ Mac/Linux:
 
 to invoke the interpreter. If you want to modify the source code, you will need
 to have the following installed:
-    
+
 - make
 - HUnit (Haskell unit testing library)
 - alex (Haskell lexer generator)

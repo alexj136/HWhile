@@ -30,6 +30,7 @@ lexerTests =
     , TestLabel "Tests that a single TokenTail    is lexed correctly" (TestCase (assert (alexScanTokens "tl"    == [(TokenTail    (0, 0)        )])))
     , TestLabel "Tests that a single TokenWhile   is lexed correctly" (TestCase (assert (alexScanTokens "while" == [(TokenWhile   (0, 0)        )])))
     , TestLabel "Tests that a single TokenDo      is lexed correctly" (TestCase (assert (alexScanTokens "do"    == [(TokenDo      (0, 0)        )])))
+    , TestLabel "Tests that a single TokenEnd     is lexed correctly" (TestCase (assert (alexScanTokens "end"   == [(TokenEnd     (0, 0)        )])))
     , TestLabel "Tests that a single TokenRead    is lexed correctly" (TestCase (assert (alexScanTokens "read"  == [(TokenRead    (0, 0)        )])))
     , TestLabel "Tests that a single TokenWrite   is lexed correctly" (TestCase (assert (alexScanTokens "write" == [(TokenWrite   (0, 0)        )])))
     , TestLabel "Tests that a single TokenVar     is lexed correctly" (TestCase (assert (alexScanTokens "hello" == [(TokenVar     (0, 0) "hello")])))
@@ -41,5 +42,5 @@ parserTests =
     ]
 
 interpreterTests =
-    [ TestLabel "" (TestCase (assert True))
+    [ TestLabel "Test of the XOR program" (TestCase (assert True))
     ]

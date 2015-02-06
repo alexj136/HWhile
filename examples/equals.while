@@ -9,13 +9,13 @@ TODOLIST := nil;
 RESULT := 0;
 
 # If the input IS valid, we will enter this loop, so set up to run the algorithm
-while XY do {
+while XY do
     RESULT := 1;
     TODOLIST := cons XY nil;
     XY := nil
-};
+end;
 
-while TODOLIST do {
+while TODOLIST do
 
     # Pop off the next pair from our list as A and B
     AB := hd TODOLIST;
@@ -30,31 +30,31 @@ while TODOLIST do {
     # Declare a tree AISNIL that will be 1 if A is nil, and 0 otherwise
     AISNIL := cons nil nil;
     COPYA := A;
-    while COPYA do { COPYA := nil; AISNIL := nil };
+    while COPYA do COPYA := nil; AISNIL := nil end;
 
     # Declare a tree BISNIL that will be 1 if B is nil, and 0 otherwise
     BISNIL := cons nil nil;
     COPYB := B;
-    while COPYB do { COPYB := nil; BISNIL := nil };
+    while COPYB do COPYB := nil; BISNIL := nil end;
 
     # If both are nil, we get to the inner loop, and set FOUNDDIFF to nil
     COPYAISNIL := AISNIL;
     COPYBISNIL := BISNIL;
-    while COPYAISNIL do {
+    while COPYAISNIL do
         COPYAISNIL := nil;
-        while COPYBISNIL do {
+        while COPYBISNIL do
             COPYBISNIL := nil;
 
             FOUNDDIFF := nil
-        }
-    };
+        end
+    end;
 
     # If both are not nil, set FOUNDDIFF to nil and add the subtrees to TODOLIST
     COPYA := A;
     COPYB := B;
-    while COPYA do {
+    while COPYA do
         COPYA := nil;
-        while COPYB do {
+        while COPYB do
             COPYB := nil;
 
             FOUNDDIFF := nil;
@@ -62,17 +62,17 @@ while TODOLIST do {
             NEW2 := cons tl A tl B;
             TODOLIST := cons NEW1 TODOLIST;
             TODOLIST := cons NEW2 TODOLIST
-        }
-    };
+        end
+    end;
 
     # If FOUNDDIFF was never set to nil, we have found a difference, so stop
     # everything and return 0;
-    while FOUNDDIFF do {
+    while FOUNDDIFF do
         FOUNDDIFF := nil;
         TODOLIST := nil;
         RESULT := nil
-    }
+    end
 
-};
+end;
 
 write RESULT

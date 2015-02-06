@@ -36,6 +36,7 @@ import Syntax
     Tail    { TokenTail    p    }
     While   { TokenWhile   p    }
     Do      { TokenDo      p    }
+    End     { TokenEnd     p    }
     If      { TokenIf      p    }
     Then    { TokenThen    p    }
     Else    { TokenElse    p    }
@@ -50,7 +51,7 @@ PROGRAM :: { Program }
 PROGRAM : Read Var SemiCo COMMAND SemiCo Write EXPR { Program $2 $4 $7 }
 
 EXPR :: { Expression }
-EXPR : ConsPre EXPR EXPR    { Cons $2 $3         } 
+EXPR : ConsPre EXPR EXPR    { Cons $2 $3         }
      | EXPR ConsInf EXPR    { Cons $1 $3         }
      | Nil                  { Nil                }
      | Var                  { Var $1             }
@@ -70,10 +71,10 @@ RESTLIST : Comma EXPR RESTLIST { $2 : $3 }
          | ClosSqu             { []      }
 
 COMMAND :: { Command }
-COMMAND : COMMAND SemiCo COMMAND                { Compos $1 $3 }
-        | Var Assign EXPR                       { Assign $1 $3 }
-        | While EXPR Do OpenCur COMMAND ClosCur { While  $2 $5 }
-        | If EXPR Then OpenCur COMMAND ClosCur Else OpenCur COMMAND ClosCur { transCond $2 $5 $9 }
+COMMAND : COMMAND SemiCo COMMAND                { Compos $1 $3       }
+        | Var Assign EXPR                       { Assign $1 $3       }
+        | While EXPR Do COMMAND End             { While  $2 $4       }
+        | If EXPR Then COMMAND Else COMMAND End { transCond $2 $4 $6 }
 
 {
 parseError :: [Token] -> a

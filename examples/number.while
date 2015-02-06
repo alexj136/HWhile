@@ -3,7 +3,7 @@
 
 read X;
 RESULT := 1;
-while X do {
+while X do
 
     # Check if the head of X is nil - if it isn't then we haven't got a number
     # If it isn't nil, we enter the loop (which we only ever do once because we
@@ -11,14 +11,14 @@ while X do {
     # shown that we don't have a number. Set X to nil so that we stop the outer
     # loop and just return our result
     HEADX := hd X;
-    while HEADX do {
+    while HEADX do
         RESULT := 0;
         HEADX := nil;
         X := nil
-    };
+    end;
     
     # If we didn't set X straight to zero, make X the tail of X so that we
     # progress for the next iteration
     X := tl X
-};
+end;
 write RESULT
