@@ -20,16 +20,15 @@ desugarProg (SuProgram n sc e) = Pure.Program n (desugar sc) e
 type Expression = Pure.Expression
 type Command = Pure.Command
  
-compos = Pure.Compos
+compos   = Pure.Compos
 assign n = Pure.Assign (Pure.Name n)
-skip   = assign "+DEAD+" (var "+DEAD+")
-while  = Pure.While
-cons   = Pure.Cons
-var    = Pure.Var . Pure.Name
-hd     = Pure.Hd
-tl     = Pure.Tl
-nil    = Pure.Nil
-iseq   = Pure.IsEq
+while    = Pure.While
+cons     = Pure.Cons
+var      = Pure.Var . Pure.Name
+hd       = Pure.Hd
+tl       = Pure.Tl
+nil      = Pure.Nil
+iseq     = Pure.IsEq
 
 data SuCommand
     = SuCompos SuCommand SuCommand
@@ -44,14 +43,12 @@ data SuCommand
 -- Desugar a command, that is, convert it to pure while syntax
 desugar :: SuCommand -> Command
 desugar suComm = case suComm of
-    SuCompos c1 c2     -> compos (desugar c1) (desugar c2)
-    SuAssign x exp     -> Pure.Assign x exp
-    SuWhile  gd c      -> while gd (desugar c)
-    IfElse gd c1 c2    -> translateConditional gd (desugar c1) (desugar c2)
-    If gd c            -> translateConditional gd (desugar c) skip
+    SuCompos c1 c2        -> compos (desugar c1) (desugar c2)
+    SuAssign x exp        -> Pure.Assign x exp
+    SuWhile  gd c         -> while gd (desugar c)
+    IfElse gd c1 c2       -> translateConditional gd (desugar c1) (desugar c2)
     Switch e cases def ->
         translateSwitch e (map (\(e, c) -> (e, desugar c)) cases) (desugar def)
-    Macro file arg     -> undefined
 
 {-- Translate a parsed if-then-else into pure while. The while code below shows
     how these are translated into pure while - stacks are used to ensure that
@@ -97,11 +94,3 @@ translateSwitch :: Expression -> [(Expression, Command)] -> Command -> Command
 translateSwitch exp  []                     def = def
 translateSwitch expA ((expB, comm) : cases) def =
     translateConditional (iseq expA expB) comm (translateSwitch expA cases def)
-
-composeAll :: [SuCommand] -> SuCommand
-composeAll []     = error "empty list"
-composeAll (c:cs) = composeAllAcc c cs
-    where
-        composeAllAcc :: SuCommand -> [SuCommand] -> SuCommand
-        composeAllAcc acc []        = acc
-        composeAllAcc acc (c:cs)    = composeAllAcc (SuCompos acc c) cs
