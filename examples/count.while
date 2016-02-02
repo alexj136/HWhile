@@ -3,15 +3,15 @@
 
 read LIST;
 SUM := 0;
-while LIST do
+while LIST {
     # Remove the head of the list and assign it to ELEM
     ELEM := hd LIST;
     LIST := tl LIST;
 
     # Add ELEM to SUM
-    while ELEM do
+    while ELEM {
         SUM := ( nil . SUM );
         ELEM := tl ELEM
-    end
-end;
+    }
+};
 write SUM

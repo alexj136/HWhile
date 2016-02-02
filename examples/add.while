@@ -3,8 +3,8 @@
 read XY;
 X := hd XY;
 Y := tl XY;
-while X do
+while X {
     Y := ( nil . Y );
     X := tl X
-end;
+};
 write Y

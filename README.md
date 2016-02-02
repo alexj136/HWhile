@@ -14,8 +14,9 @@ The grammar below gives exactly the concrete syntax of this implementation:
 
     CMD  ::= CMD; CMD
            | ID := EXP
-           | while EXP do CMD end
-           | if EXP then CMD else CMD end
+           | while EXP { CMD }
+           | if EXP { CMD } else { CMD }
+           | if EXP { CMD }
 
     EXP  ::= nil
            | cons EXP EXP

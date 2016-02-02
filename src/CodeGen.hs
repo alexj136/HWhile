@@ -1,12 +1,12 @@
 module CodeGen where
 
-import Syntax
+import PureSyntax
 import Data.List (intersperse)
 import qualified Data.Map as M
 
 -- A VarMap is a Data.Map from variable names to integers for a program. When
 -- compiling, integer variable names are far simpler to use than strings.
-type VarMap = M.Map String Int
+type VarMap = M.Map Name Int
 
 -- Create a VarMap for the given Program
 varMapProg :: Program -> VarMap
@@ -69,7 +69,7 @@ codeGenComm i vm comm = case comm of
         , tabs i ++ "// end compile while"
         ]
     Assign v x ->
-        [ tabs i ++ "// compile " ++ v ++ " := " ++ show x
+        [ tabs i ++ "// compile " ++ show v ++ " := " ++ show x
         , tabs i ++ "tmp = store[" ++ show (vm M.! v) ++ "];"
         , tabs i ++ "store[" ++ show (vm M.! v) ++ "] = " ++ gen x ++ ";"
         , tabs i ++ "freeTree(tmp);"

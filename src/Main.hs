@@ -2,23 +2,25 @@ module Main where
 
 import qualified Lexer as L
 import qualified Parser as P
-import qualified Syntax as S
-import qualified Interpreter as I
+import qualified PureSyntax as S
+import SugarSyntax
+import qualified PureInterpreter as I
 import qualified CodeGen as C
 import System.Environment
 import Data.List (intersperse)
 
-readProg :: String -> S.Program
+readProg :: String -> SuProgram
 readProg = P.parseProg . L.alexScanTokens
 
-readComm :: String -> S.Command
+readComm :: String -> SuCommand
 readComm = P.parseComm . L.alexScanTokens
 
 readExpr :: String -> S.Expression
 readExpr = P.parseExpr . L.alexScanTokens
 
 evalFromStr :: String -> String -> S.Expression
-evalFromStr argStr progStr = I.evalProg (readExpr argStr) (readProg progStr)
+evalFromStr argStr progStr =
+    I.evalProg (readExpr argStr) (desugarProg (readProg progStr))
 
 helpMessage = concat $ (intersperse "\n") $
     [ "HWhile: a Haskell implementation of the while language, by Alex Jeffery."

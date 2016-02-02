@@ -1,4 +1,4 @@
-module Interpreter where
+module PureInterpreter where
 
 {--
 Interpreter functions for while programs. These functions are essentially
@@ -6,12 +6,12 @@ Haskell encodings of the semantic rules for the while language given in Neil
 Jones' book on pages 40 & 41.
 --}
 
-import Syntax
+import PureSyntax
 import qualified Data.Map as M
 
 -- While stores are maps from variable names to expressions, i.e. the values of
 -- variables
-type Store = M.Map String Expression
+type Store = M.Map Name Expression
 
 -- To evaluate a program, we evaluate the program's command with the initial
 -- store that contains the read variable with the value of the input, and

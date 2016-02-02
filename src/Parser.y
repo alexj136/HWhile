@@ -2,7 +2,8 @@
 module Parser where
 
 import Lexer
-import Syntax
+import PureSyntax
+import SugarSyntax
 }
 
 %name parseProg PROGRAM
@@ -47,14 +48,15 @@ import Syntax
 
 %%
 
-PROGRAM :: { Program }
-PROGRAM : Read Var SemiCo COMMAND SemiCo Write EXPR { Program $2 $4 $7 }
+PROGRAM :: { SuProgram }
+PROGRAM : Read Var SemiCo COMMAND SemiCo Write EXPR {
+        SuProgram (Name $2) $4 $7 }
 
 EXPR :: { Expression }
 EXPR : ConsPre EXPR EXPR    { Cons $2 $3         }
      | EXPR ConsInf EXPR    { Cons $1 $3         }
      | Nil                  { Nil                }
-     | Var                  { Var $1             }
+     | Var                  { Var (Name $1)      }
      | Int                  { mkInt $1           }
      | OpenBrc EXPR ClosBrc { $2                 }
      | Head EXPR            { Hd $2              }
@@ -70,11 +72,15 @@ RESTLIST :: { [Expression] }
 RESTLIST : Comma EXPR RESTLIST { $2 : $3 }
          | ClosSqu             { []      }
 
-COMMAND :: { Command }
-COMMAND : COMMAND SemiCo COMMAND                { Compos $1 $3       }
-        | Var Assign EXPR                       { Assign $1 $3       }
-        | While EXPR Do COMMAND End             { While  $2 $4       }
-        | If EXPR Then COMMAND Else COMMAND End { transCond $2 $4 $6 }
+COMMAND :: { SuCommand }
+COMMAND : COMMAND SemiCo COMMAND   { SuCompos $1 $3        }
+        | Var Assign EXPR          { SuAssign (Name $1) $3 }
+        | While EXPR BLOCK         { SuWhile  $2 $3        }
+        | If EXPR BLOCK Else BLOCK { IfElse   $2 $3 $5     }
+        | If EXPR BLOCK            { If       $2 $3        }
+
+BLOCK :: { SuCommand }
+BLOCK : OpenCur COMMAND ClosCur { $2 }
 
 {
 parseError :: [Token] -> a
@@ -102,41 +108,4 @@ intToExp n acc = intToExp (n - 1) (Cons Nil acc)
 listToWhileList :: [Expression] -> Expression
 listToWhileList (h:t) = Cons h (listToWhileList t)
 listToWhileList []    = Nil
-
-{-- Translate a parsed if-then-else into pure while. The while code below shows
-    how these are translated into pure while - stacks are used to ensure that
-    these can be nested recursively.
-
-        _NOT_EXP_VAL_STACK__ := cons cons nil nil _NOT_EXP_VAL_STACK__;
-        _EXP_VAL_STACK_      := cons E _EXP_VAL_STACK_;
-        while hd _EXP_VAL_STACK_ do
-            { _EXP_VAL_STACK_      := cons nil tl _EXP_VAL_STACK_
-            ; _NOT_EXP_VAL_STACK__ := cons nil tl _NOT_EXP_VAL_STACK__
-            ; C1
-            }
-        while hd _NOT_EXP_VAL_STACK__ do
-            { _NOT_EXP_VAL_STACK__ := cons nil tl _NOT_EXP_VAL_STACK__
-            ; C2
-            }
-        _NOT_EXP_VAL_STACK__ := tl _NOT_EXP_VAL_STACK__;
-        _EXP_VAL_STACK_      := tl _EXP_VAL_STACK_;
-
-    The variable names used for these stacks will not be accepted by the lexer,
-    so they are guaranteed not to interfere with the programmer's choice of
-    variable names.
---}
-transCond :: Expression -> Command -> Command -> Command
-transCond gd c1 c2 =
-    Compos (Compos (Compos (Compos (Compos
-        (Assign "+NOT+EXP+STACK+" (Cons (Cons Nil Nil) (Var "+NOT+EXP+STACK+")))
-        (Assign "+EXP+VAL+STACK+" (Cons gd (Var "+EXP+VAL+STACK+"))))
-        (While (Hd (Var "+EXP+VAL+STACK+")) (Compos (Compos
-            (Assign "+EXP+VAL+STACK+" (Cons Nil (Tl (Var "+EXP+VAL+STACK+"))))
-            (Assign "+NOT+EXP+STACK+" (Cons Nil (Tl (Var "+NOT+EXP+STACK+")))))
-            c1)))
-        (While (Hd (Var "+NOT+EXP+STACK+")) (Compos
-            (Assign "+NOT+EXP+STACK+" (Cons Nil (Tl (Var "+NOT+EXP+STACK+"))))
-            c2)))
-        (Assign "+NOT+EXP+STACK+" (Tl (Var "+NOT+EXP+STACK+"))))
-        (Assign "+EXP+VAL+STACK+" (Tl (Var "+EXP+VAL+STACK+")))
 }

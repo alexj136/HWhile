@@ -2,17 +2,20 @@
 read AB;
 A := hd AB;
 B := tl AB;
-if A then
-    if B then
+if A {
+    if B {
         X := nil
-    else
+    }
+    else {
         X := cons nil nil
-    end
-else
-    if B then
+    }
+}
+else {
+    if B {
         X := cons nil nil
-    else
+    }
+    else {
         X := nil
-    end
-end;
+    }
+};
 write X

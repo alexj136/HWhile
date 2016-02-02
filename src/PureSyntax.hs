@@ -1,4 +1,4 @@
-module Syntax where
+module PureSyntax where
 
 import qualified Data.Map as M
 
@@ -6,18 +6,20 @@ import qualified Data.Map as M
 -- context-free grammar in Neil Jones' book, page 32. This module also contains
 -- functions for printing syntax trees.
 
+newtype Name = Name String deriving (Eq, Ord)
+
 data Program
-    = Program String Command Expression
+    = Program Name Command Expression
     deriving (Eq, Ord)
 
 data Command
     = Compos Command    Command
-    | Assign String     Expression
+    | Assign Name       Expression
     | While  Expression Command
     deriving (Eq, Ord)
 
 data Expression
-    = Var  String
+    = Var  Name  
     | Nil
     | Cons Expression Expression
     | Hd   Expression
@@ -25,21 +27,24 @@ data Expression
     | IsEq Expression Expression
     deriving (Eq, Ord)
 
+instance Show Name where
+    show (Name x) = x
+
 instance Show Program where
-    show (Program r c w) = "read " ++ r ++ ";\n"
-                           ++ (show c) ++ ";\n"
-                           ++ "write " ++ (show w)
+    show (Program (Name r) c w) = "read " ++ r ++ ";\n"
+                               ++ (show c) ++ ";\n"
+                               ++ "write " ++ (show w)
 
 instance Show Command where
     show c = showC 0 c
 
 showC :: Int -> Command -> String
-showC i (While  x c) = (tabs i) ++ "while " ++ show x ++ " do {\n"
-                       ++ showC (i + 1) c ++ "\n"
-                       ++ (tabs i) ++ "}"
-showC i (Assign v x) = (tabs i) ++ v ++ " := " ++ show x
-showC i (Compos a b) = (showC i a) ++ ";\n"
-                       ++ (showC i b)
+showC i (While  x        c) = (tabs i) ++ "while " ++ show x ++ " do {\n"
+                           ++ showC (i + 1) c ++ "\n"
+                           ++ (tabs i) ++ "}"
+showC i (Assign (Name v) x) = (tabs i) ++ v ++ " := " ++ show x
+showC i (Compos a        b) = (showC i a) ++ ";\n"
+                           ++ (showC i b)
 
 tabs :: Int -> String
 tabs x | x <  0 = error "negative tabs"
@@ -47,12 +52,12 @@ tabs x | x <  0 = error "negative tabs"
        | x >  0 = "    " ++ tabs (x - 1)
 
 instance Show Expression where
-    show (Var  s  ) = s
-    show (Nil     ) = "nil"
-    show (Cons a b) = '(' : show a ++ '.' : show b ++ ")"
-    show (Hd   x  ) = "hd " ++ show x
-    show (Tl   x  ) = "tl " ++ show x
-    show (IsEq a b) = "=? " ++ show a ++ ' ' : show b
+    show (Var (Name s)) = s
+    show (Nil         ) = "nil"
+    show (Cons a b    ) = '(' : show a ++ '.' : show b ++ ")"
+    show (Hd   x      ) = "hd " ++ show x
+    show (Tl   x      ) = "tl " ++ show x
+    show (IsEq a b    ) = "=? " ++ show a ++ ' ' : show b
 
 -- Convert a while integer expression into a decimal number string. If the
 -- isVerbose argument is True, unparsable expressions will be displayed in full.
