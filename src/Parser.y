@@ -20,34 +20,33 @@ import SugarSyntax
 %left SemiCo
 
 %token
-    ConsInf { Token ( TkConsInf , p ) }
-    OpenBrc { Token ( TkOpenBrc , p ) }
-    ClosBrc { Token ( TkClosBrc , p ) }
-    OpenCur { Token ( TkOpenCur , p ) }
-    ClosCur { Token ( TkClosCur , p ) }
-    OpenSqu { Token ( TkOpenSqu , p ) }
-    ClosSqu { Token ( TkClosSqu , p ) }
-    LAngle  { Token ( TkLAngle  , p ) }
-    RAngle  { Token ( TkRAngle  , p ) }
-    Comma   { Token ( TkComma   , p ) }
-    IsEq    { Token ( TkIsEq    , p ) }
-    Assign  { Token ( TkAssign  , p ) }
-    Nil     { Token ( TkNil     , p ) }
-    SemiCo  { Token ( TkSemiCo  , p ) }
-    ConsPre { Token ( TkConsPre , p ) }
-    Head    { Token ( TkHead    , p ) }
-    Tail    { Token ( TkTail    , p ) }
-    While   { Token ( TkWhile   , p ) }
-    Switch  { Token ( TkSwitch  , p ) }
-    Case    { Token ( TkCase    , p ) }
-    Default { Token ( TkDefault , p ) }
-    Colon   { Token ( TkColon   , p ) }
-    If      { Token ( TkIf      , p ) }
-    Else    { Token ( TkElse    , p ) }
-    Read    { Token ( TkRead    , p ) }
-    Write   { Token ( TkWrite   , p ) }
-    Var     { Token ( ITkVar $$ , p ) }
-    Int     { Token ( ITkInt $$ , p ) }
+    Dot     { Token ( TkDot       , p ) }
+    OpenBrc { Token ( TkOpenBrc   , p ) }
+    ClosBrc { Token ( TkClosBrc   , p ) }
+    OpenCur { Token ( TkOpenCur   , p ) }
+    ClosCur { Token ( TkClosCur   , p ) }
+    OpenSqu { Token ( TkOpenSqu   , p ) }
+    ClosSqu { Token ( TkClosSqu   , p ) }
+    Comma   { Token ( TkComma     , p ) }
+    IsEq    { Token ( TkIsEq      , p ) }
+    Assign  { Token ( TkAssign    , p ) }
+    Nil     { Token ( TkNil       , p ) }
+    SemiCo  { Token ( TkSemiCo    , p ) }
+    Cons    { Token ( TkCons      , p ) }
+    Head    { Token ( TkHead      , p ) }
+    Tail    { Token ( TkTail      , p ) }
+    While   { Token ( TkWhile     , p ) }
+    Switch  { Token ( TkSwitch    , p ) }
+    Case    { Token ( TkCase      , p ) }
+    Default { Token ( TkDefault   , p ) }
+    Colon   { Token ( TkColon     , p ) }
+    If      { Token ( TkIf        , p ) }
+    Else    { Token ( TkElse      , p ) }
+    Read    { Token ( TkRead      , p ) }
+    Write   { Token ( TkWrite     , p ) }
+    Var     { Token ( ITkVar   $$ , p ) }
+    Int     { Token ( ITkInt   $$ , p ) }
+    Macro   { Token ( ITkMacro $$ , p ) }
 
 %%
 
@@ -56,8 +55,8 @@ PROGRAM : Read Var SemiCo COMMAND SemiCo Write EXPR {
         SuProgram (Name $2) $4 $7 }
 
 EXPR :: { Expression }
-EXPR : ConsPre EXPR EXPR    { Cons $2 $3         }
-     | EXPR ConsInf EXPR    { Cons $1 $3         }
+EXPR : Cons EXPR EXPR       { Cons $2 $3         }
+     | EXPR Dot EXPR        { Cons $1 $3         }
      | Nil                  { Nil                }
      | Var                  { Var (Name $1)      }
      | Int                  { intToExp $1 Nil    }
@@ -66,6 +65,7 @@ EXPR : ConsPre EXPR EXPR    { Cons $2 $3         }
      | Tail EXPR            { Tl $2              }
      | IsEq EXPR EXPR       { IsEq $2 $3         }
      | EXPLIST              { listToWhileList $1 }
+     | Macro EXPR           { undefined          }
 
 EXPLIST :: { [Expression] }
 EXPLIST : OpenSqu ClosSqu       { []      }
@@ -96,7 +96,7 @@ parseError :: [Token] -> a
 parseError []           = error "Parse error: reached end of file while parsing"
 parseError (tok : rest) = error $ concat
     [ "Parse error: "
-    , (tokStr tok)
+    , (show tok)
     , " at line "
     , (show (lineNo tok))
     , ", char "
