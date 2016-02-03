@@ -13,44 +13,41 @@ $alnum = [$alpha $digit]
 tokens :-
     $white+               ; -- Ignore whitespace
     \#.*\n                ; -- Ignore the rest of a line after '#'
-    \.                    { \p s -> SimpleToken (pos p) TkConsInf } -- Infix cons
-    \(                    { \p s -> SimpleToken (pos p) TkOpenBrc }
-    \)                    { \p s -> SimpleToken (pos p) TkClosBrc }
-    \{                    { \p s -> SimpleToken (pos p) TkOpenCur }
-    \}                    { \p s -> SimpleToken (pos p) TkClosCur }
-    \[                    { \p s -> SimpleToken (pos p) TkOpenSqu }
-    \]                    { \p s -> SimpleToken (pos p) TkClosSqu }
-    \,                    { \p s -> SimpleToken (pos p) TkComma   }
-    \?\=                  { \p s -> SimpleToken (pos p) TkIsEq    }
-    \:\=                  { \p s -> SimpleToken (pos p) TkAssign  }
-    \:                    { \p s -> SimpleToken (pos p) TkColon   }
-    "nil"                 { \p s -> SimpleToken (pos p) TkNil     }
-    \;                    { \p s -> SimpleToken (pos p) TkSemiCo  }
-    "cons"                { \p s -> SimpleToken (pos p) TkConsPre } -- Prefix cons
-    "hd"                  { \p s -> SimpleToken (pos p) TkHead    }
-    "head"                { \p s -> SimpleToken (pos p) TkHead    }
-    "tl"                  { \p s -> SimpleToken (pos p) TkTail    }
-    "tail"                { \p s -> SimpleToken (pos p) TkTail    }
-    "while"               { \p s -> SimpleToken (pos p) TkWhile   }
-    "switch"              { \p s -> SimpleToken (pos p) TkSwitch  }
-    "case"                { \p s -> SimpleToken (pos p) TkCase    }
-    "default"             { \p s -> SimpleToken (pos p) TkDefault }
-    "if"                  { \p s -> SimpleToken (pos p) TkIf      }
-    "else"                { \p s -> SimpleToken (pos p) TkElse    }
-    "read"                { \p s -> SimpleToken (pos p) TkRead    }
-    "write"               { \p s -> SimpleToken (pos p) TkWrite   }
-    $alpha[$alnum \_ \']* { \p s -> TokenVar    (pos p) s         }
-    "0"                   { \p s -> TokenInt    (pos p) s         }
-    [1-9][$digit]*        { \p s -> TokenInt    (pos p) s         }
+    \.                    { \p s -> Token ( TkConsInf       , p ) } -- Infix cons
+    \(                    { \p s -> Token ( TkOpenBrc       , p ) }
+    \)                    { \p s -> Token ( TkClosBrc       , p ) }
+    \{                    { \p s -> Token ( TkOpenCur       , p ) }
+    \}                    { \p s -> Token ( TkClosCur       , p ) }
+    \[                    { \p s -> Token ( TkOpenSqu       , p ) }
+    \]                    { \p s -> Token ( TkClosSqu       , p ) }
+    \,                    { \p s -> Token ( TkComma         , p ) }
+    \?\=                  { \p s -> Token ( TkIsEq          , p ) }
+    \:\=                  { \p s -> Token ( TkAssign        , p ) }
+    \:                    { \p s -> Token ( TkColon         , p ) }
+    "nil"                 { \p s -> Token ( TkNil           , p ) }
+    \;                    { \p s -> Token ( TkSemiCo        , p ) }
+    "cons"                { \p s -> Token ( TkConsPre       , p ) } -- Prefix cons
+    "hd"                  { \p s -> Token ( TkHead          , p ) }
+    "head"                { \p s -> Token ( TkHead          , p ) }
+    "tl"                  { \p s -> Token ( TkTail          , p ) }
+    "tail"                { \p s -> Token ( TkTail          , p ) }
+    "while"               { \p s -> Token ( TkWhile         , p ) }
+    "switch"              { \p s -> Token ( TkSwitch        , p ) }
+    "case"                { \p s -> Token ( TkCase          , p ) }
+    "default"             { \p s -> Token ( TkDefault       , p ) }
+    "if"                  { \p s -> Token ( TkIf            , p ) }
+    "else"                { \p s -> Token ( TkElse          , p ) }
+    "read"                { \p s -> Token ( TkRead          , p ) }
+    "write"               { \p s -> Token ( TkWrite         , p ) }
+    $alpha[$alnum \_ \']* { \p s -> Token ( ITkVar s        , p ) }
+    "0"                   { \p s -> Token ( ITkInt (read s) , p ) }
+    [1-9][$digit]*        { \p s -> Token ( ITkInt (read s) , p ) }
 
 {
-data Token
-    = SimpleToken (Int, Int) STKind
-    | TokenVar    (Int, Int) String
-    | TokenInt    (Int, Int) String
-    deriving Show
 
-data STKind
+newtype Token = Token (TokenType, AlexPosn)
+
+data TokenType
     = TkConsInf
     | TkOpenBrc
     | TkClosBrc
@@ -58,75 +55,65 @@ data STKind
     | TkClosCur
     | TkOpenSqu
     | TkClosSqu
-    | TkComma  
-    | TkColon  
-    | TkIsEq   
-    | TkAssign 
-    | TkNil    
-    | TkSemiCo 
+    | TkComma
+    | TkColon
+    | TkIsEq
+    | TkAssign
+    | TkNil
+    | TkSemiCo
     | TkConsPre
-    | TkHead   
-    | TkTail   
-    | TkWhile  
-    | TkSwitch 
-    | TkCase   
+    | TkHead
+    | TkTail
+    | TkWhile
+    | TkSwitch
+    | TkCase
     | TkDefault
-    | TkIf     
-    | TkElse   
-    | TkRead   
-    | TkWrite  
+    | TkIf
+    | TkElse
+    | TkRead
+    | TkWrite
+    | ITkVar String
+    | ITkInt Int
     deriving (Show, Eq)
 
 -- The default implementation is not quite sufficient - it is more useful for
 -- tokens to be equal regardless of position
 instance Eq Token where
-    (==) (SimpleToken  _ a) (SimpleToken  _ b) = a == b
-    (==) (TokenVar     _ a) (TokenVar     _ b) = a == b
-    (==) (TokenInt     _ a) (TokenInt     _ b) = a == b
-    (==) _                  _                  = False
+    (==) (Token (tyA, _)) (Token (tyB, _)) = tyA == tyB
 
 -- Get the number of lines into the file that the text produced this token
 -- occurred
 lineNo :: Token -> Int
-lineNo tok = case tok of
-    SimpleToken  (x, _) _ -> x
-    TokenVar     (x, _) _ -> x
-    TokenInt     (x, _) _ -> x
+lineNo tok = case tok of Token (_, (AlexPn _ line char)) -> line
 
 -- Get the number of characters into the line that the text that produced this
 -- token occurred
 charNo :: Token -> Int
-charNo tok = case tok of
-    SimpleToken  (_, x) _ -> x
-    TokenVar     (_, x) _ -> x
-    TokenInt     (_, x) _ -> x
+charNo tok = case tok of Token (_, (AlexPn _ line char)) -> char
 
 -- Get a string representation of a token for error message purposes
 tokStr :: Token -> String
 tokStr tok = case tok of
-    SimpleToken (_, _) TkConsInf -> "'.'"
-    SimpleToken (_, _) TkOpenBrc -> "'('"
-    SimpleToken (_, _) TkClosBrc -> "')'"
-    SimpleToken (_, _) TkOpenCur -> "'{'"
-    SimpleToken (_, _) TkClosCur -> "'}'"
-    SimpleToken (_, _) TkOpenSqu -> "'['"
-    SimpleToken (_, _) TkClosSqu -> "']'"
-    SimpleToken (_, _) TkComma   -> "','"
-    SimpleToken (_, _) TkIsEq    -> "'?='"
-    SimpleToken (_, _) TkAssign  -> "':='"
-    SimpleToken (_, _) TkNil     -> "'nil'"
-    SimpleToken (_, _) TkSemiCo  -> "';'"
-    SimpleToken (_, _) TkConsPre -> "'cons'"
-    SimpleToken (_, _) TkHead    -> "'head'"
-    SimpleToken (_, _) TkTail    -> "'tail'"
-    SimpleToken (_, _) TkWhile   -> "'while'"
-    SimpleToken (_, _) TkIf      -> "'if'"
-    SimpleToken (_, _) TkElse    -> "'else'"
-    SimpleToken (_, _) TkRead    -> "'read'"
-    SimpleToken (_, _) TkWrite   -> "'write'"
-    TokenVar    (_, _) s       -> "variable '" ++ s ++ "'"
-    TokenInt    (_, _) s       -> "integer '" ++ s ++ "'"
-
-pos :: AlexPosn -> (Int, Int)
-pos (AlexPn i j k) = (j, k)
+    Token (TkConsInf, _)-> "'.'"
+    Token (TkOpenBrc, _)-> "'('"
+    Token (TkClosBrc, _)-> "')'"
+    Token (TkOpenCur, _)-> "'{'"
+    Token (TkClosCur, _)-> "'}'"
+    Token (TkOpenSqu, _)-> "'['"
+    Token (TkClosSqu, _)-> "']'"
+    Token (TkComma  , _)-> "','"
+    Token (TkIsEq   , _)-> "'?='"
+    Token (TkAssign , _)-> "':='"
+    Token (TkNil    , _)-> "'nil'"
+    Token (TkSemiCo , _)-> "';'"
+    Token (TkConsPre, _)-> "'cons'"
+    Token (TkHead   , _)-> "'head'"
+    Token (TkTail   , _)-> "'tail'"
+    Token (TkWhile  , _)-> "'while'"
+    Token (TkIf     , _)-> "'if'"
+    Token (TkElse   , _)-> "'else'"
+    Token (TkRead   , _)-> "'read'"
+    Token (TkWrite  , _)-> "'write'"
+    Token (ITkVar s , _)-> "variable '" ++ s ++ "'"
+    Token (ITkInt i , _)-> "integer '" ++ show i ++ "'"
 }

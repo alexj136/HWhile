@@ -20,32 +20,32 @@ import SugarSyntax
 %left SemiCo
 
 %token
-    ConsInf { SimpleToken p TkConsInf }
-    OpenBrc { SimpleToken p TkOpenBrc }
-    ClosBrc { SimpleToken p TkClosBrc }
-    OpenCur { SimpleToken p TkOpenCur }
-    ClosCur { SimpleToken p TkClosCur }
-    OpenSqu { SimpleToken p TkOpenSqu }
-    ClosSqu { SimpleToken p TkClosSqu }
-    Comma   { SimpleToken p TkComma   }
-    IsEq    { SimpleToken p TkIsEq    }
-    Assign  { SimpleToken p TkAssign  }
-    Nil     { SimpleToken p TkNil     }
-    SemiCo  { SimpleToken p TkSemiCo  }
-    ConsPre { SimpleToken p TkConsPre }
-    Head    { SimpleToken p TkHead    }
-    Tail    { SimpleToken p TkTail    }
-    While   { SimpleToken p TkWhile   }
-    Switch  { SimpleToken p TkSwitch  }
-    Case    { SimpleToken p TkCase    }
-    Default { SimpleToken p TkDefault }
-    Colon   { SimpleToken p TkColon   }
-    If      { SimpleToken p TkIf      }
-    Else    { SimpleToken p TkElse    }
-    Read    { SimpleToken p TkRead    }
-    Write   { SimpleToken p TkWrite   }
-    Var     { TokenVar    p $$        }
-    Int     { TokenInt    p $$        }
+    ConsInf { Token ( TkConsInf , p ) }
+    OpenBrc { Token ( TkOpenBrc , p ) }
+    ClosBrc { Token ( TkClosBrc , p ) }
+    OpenCur { Token ( TkOpenCur , p ) }
+    ClosCur { Token ( TkClosCur , p ) }
+    OpenSqu { Token ( TkOpenSqu , p ) }
+    ClosSqu { Token ( TkClosSqu , p ) }
+    Comma   { Token ( TkComma   , p ) }
+    IsEq    { Token ( TkIsEq    , p ) }
+    Assign  { Token ( TkAssign  , p ) }
+    Nil     { Token ( TkNil     , p ) }
+    SemiCo  { Token ( TkSemiCo  , p ) }
+    ConsPre { Token ( TkConsPre , p ) }
+    Head    { Token ( TkHead    , p ) }
+    Tail    { Token ( TkTail    , p ) }
+    While   { Token ( TkWhile   , p ) }
+    Switch  { Token ( TkSwitch  , p ) }
+    Case    { Token ( TkCase    , p ) }
+    Default { Token ( TkDefault , p ) }
+    Colon   { Token ( TkColon   , p ) }
+    If      { Token ( TkIf      , p ) }
+    Else    { Token ( TkElse    , p ) }
+    Read    { Token ( TkRead    , p ) }
+    Write   { Token ( TkWrite   , p ) }
+    Var     { Token ( ITkVar $$ , p ) }
+    Int     { Token ( ITkInt $$ , p ) }
 
 %%
 
@@ -58,7 +58,7 @@ EXPR : ConsPre EXPR EXPR    { Cons $2 $3         }
      | EXPR ConsInf EXPR    { Cons $1 $3         }
      | Nil                  { Nil                }
      | Var                  { Var (Name $1)      }
-     | Int                  { mkInt $1           }
+     | Int                  { intToExp $1 Nil    }
      | OpenBrc EXPR ClosBrc { $2                 }
      | Head EXPR            { Hd $2              }
      | Tail EXPR            { Tl $2              }
@@ -100,11 +100,6 @@ parseError (tok : rest) = error $ concat
     , ", char "
     , (show (charNo tok))
     ]
-
--- Takes a string representation of an integer and converts it into the
--- equivalent Expression representation
-mkInt :: String -> Expression
-mkInt s = intToExp (read s) Nil
 
 -- Makes an Expression from an Int, using accumulating parameter style
 intToExp :: Int -> Expression -> Expression
