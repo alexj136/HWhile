@@ -20,6 +20,8 @@ tokens :-
     \}                    { \p s -> Token ( TkClosCur       , p ) }
     \[                    { \p s -> Token ( TkOpenSqu       , p ) }
     \]                    { \p s -> Token ( TkClosSqu       , p ) }
+    \<                    { \p s -> Token ( TkLAngle        , p ) }
+    \>                    { \p s -> Token ( TkRAngle        , p ) }
     \,                    { \p s -> Token ( TkComma         , p ) }
     \?\=                  { \p s -> Token ( TkIsEq          , p ) }
     \:\=                  { \p s -> Token ( TkAssign        , p ) }
@@ -55,6 +57,8 @@ data TokenType
     | TkClosCur
     | TkOpenSqu
     | TkClosSqu
+    | TkLAngle
+    | TkRAngle
     | TkComma
     | TkColon
     | TkIsEq
@@ -101,6 +105,8 @@ tokStr tok = case tok of
     Token (TkClosCur, _)-> "'}'"
     Token (TkOpenSqu, _)-> "'['"
     Token (TkClosSqu, _)-> "']'"
+    Token (TkLAngle , _)-> "'<'"
+    Token (TkRAngle , _)-> "'>'"
     Token (TkComma  , _)-> "','"
     Token (TkIsEq   , _)-> "'?='"
     Token (TkAssign , _)-> "':='"

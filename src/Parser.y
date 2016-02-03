@@ -27,6 +27,8 @@ import SugarSyntax
     ClosCur { Token ( TkClosCur , p ) }
     OpenSqu { Token ( TkOpenSqu , p ) }
     ClosSqu { Token ( TkClosSqu , p ) }
+    LAngle  { Token ( TkLAngle  , p ) }
+    RAngle  { Token ( TkRAngle  , p ) }
     Comma   { Token ( TkComma   , p ) }
     IsEq    { Token ( TkIsEq    , p ) }
     Assign  { Token ( TkAssign  , p ) }
