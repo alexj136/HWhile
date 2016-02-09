@@ -77,7 +77,7 @@ RESTLIST : Comma EXPR RESTLIST { $2 : $3 }
 COMMAND :: { SuCommand }
 COMMAND : COMMAND SemiCo COMMAND         { SuCompos $1 $3                }
         | Var Assign EXPR                { SuAssign (Name $1) $3         }
-        | Var Assign Macro EXPR          { Macro $3 $4                   }
+        | Var Assign Macro EXPR          { Macro (Name $1) $3 $4         }
         | While EXPR BLOCK               { SuWhile  $2 $3                }
         | If EXPR BLOCK Else BLOCK       { IfElse   $2 $3 $5             }
         | If EXPR BLOCK                  { IfElse   $2 $3 skip           }
