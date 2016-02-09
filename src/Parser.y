@@ -65,7 +65,6 @@ EXPR : Cons EXPR EXPR       { Cons $2 $3         }
      | Tail EXPR            { Tl $2              }
      | IsEq EXPR EXPR       { IsEq $2 $3         }
      | EXPLIST              { listToWhileList $1 }
-     | Macro EXPR           { undefined          }
 
 EXPLIST :: { [Expression] }
 EXPLIST : OpenSqu ClosSqu       { []      }
@@ -78,6 +77,7 @@ RESTLIST : Comma EXPR RESTLIST { $2 : $3 }
 COMMAND :: { SuCommand }
 COMMAND : COMMAND SemiCo COMMAND         { SuCompos $1 $3                }
         | Var Assign EXPR                { SuAssign (Name $1) $3         }
+        | Var Assign Macro EXPR          { Macro $3 $4                   }
         | While EXPR BLOCK               { SuWhile  $2 $3                }
         | If EXPR BLOCK Else BLOCK       { IfElse   $2 $3 $5             }
         | If EXPR BLOCK                  { IfElse   $2 $3 skip           }

@@ -10,6 +10,7 @@ module SugarSyntax
  - included for easier parsing and translation to pure syntax.
  -}
 
+import qualified Data.Set   as S
 import qualified PureSyntax as Pure
 
 data SuProgram = SuProgram Pure.Name SuCommand Expression deriving Eq
@@ -35,10 +36,21 @@ data SuCommand
     | SuAssign Pure.Name Expression
     | SuWhile Expression SuCommand
     | IfElse Expression SuCommand SuCommand
-    | If Expression SuCommand
     | Macro FilePath Expression
     | Switch Expression [(Expression, SuCommand)] SuCommand
     deriving (Eq, Ord)
+
+macroNamesProg :: SuProgram -> S.Set FilePath
+macroNamesProg (SuProgram _ sc _) = macroNames sc
+    where
+    macroNames :: SuCommand -> S.Set FilePath
+    macroNames sc = case sc of
+        SuCompos c d -> S.union (macroNames c) (macroNames d)
+        SuWhile  _ c -> macroNames c
+        IfElse _ c d -> S.union (macroNames c) (macroNames d)
+        Macro    f _ -> S.singleton f
+        Switch _ l c ->
+            S.union (macroNames c) (S.unions ((map (macroNames . snd)) l))
 
 -- Desugar a command, that is, convert it to pure while syntax
 desugar :: SuCommand -> Command
