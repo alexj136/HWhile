@@ -52,19 +52,19 @@ import SugarSyntax
 
 PROGRAM :: { SuProgram }
 PROGRAM : Read Var SemiCo COMMAND SemiCo Write EXPR {
-        SuProgram (Name $2) $4 $7 }
+        SuProgram (Name ("FN", $2)) $4 $7 }
 
 EXPR :: { Expression }
-EXPR : Cons EXPR EXPR       { Cons $2 $3         }
-     | EXPR Dot EXPR        { Cons $1 $3         }
-     | Nil                  { Nil                }
-     | Var                  { Var (Name $1)      }
-     | Int                  { intToExp $1 Nil    }
-     | OpenBrc EXPR ClosBrc { $2                 }
-     | Head EXPR            { Hd $2              }
-     | Tail EXPR            { Tl $2              }
-     | IsEq EXPR EXPR       { IsEq $2 $3         }
-     | EXPLIST              { listToWhileList $1 }
+EXPR : Cons EXPR EXPR       { Cons $2 $3              }
+     | EXPR Dot EXPR        { Cons $1 $3              }
+     | Nil                  { Nil                     }
+     | Var                  { Var (Name ("FN", $1))   }
+     | Int                  { intToExp $1 Nil         }
+     | OpenBrc EXPR ClosBrc { $2                      }
+     | Head EXPR            { Hd $2                   }
+     | Tail EXPR            { Tl $2                   }
+     | IsEq EXPR EXPR       { IsEq $2 $3              }
+     | EXPLIST              { listToWhileList $1      }
 
 EXPLIST :: { [Expression] }
 EXPLIST : OpenSqu ClosSqu       { []      }
@@ -76,8 +76,8 @@ RESTLIST : Comma EXPR RESTLIST { $2 : $3 }
 
 COMMAND :: { SuCommand }
 COMMAND : COMMAND SemiCo COMMAND         { SuCompos $1 $3                }
-        | Var Assign EXPR                { SuAssign (Name $1) $3         }
-        | Var Assign Macro EXPR          { Macro (Name $1) $3 $4         }
+        | Var Assign EXPR                { SuAssign (Name ("FN", $1)) $3 }
+        | Var Assign Macro EXPR          { Macro (Name ("FN", $1)) $3 $4 }
         | While EXPR BLOCK               { SuWhile  $2 $3                }
         | If EXPR BLOCK Else BLOCK       { IfElse   $2 $3 $5             }
         | If EXPR BLOCK                  { IfElse   $2 $3 skip           }
@@ -116,5 +116,5 @@ listToWhileList []    = Nil
 -- A command that does nothing (simplifies ifs without elses and switches
 -- without defaults
 skip :: SuCommand
-skip = SuAssign (Name "+DEAD+") (Var (Name "+DEAD+"))
+skip = SuAssign (Name ("+IMPL+", "+DEAD+")) (Var (Name ("+IMPL+", "+DEAD+")))
 }

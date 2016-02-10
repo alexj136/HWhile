@@ -1,7 +1,7 @@
 module SugarSyntax
     ( SuProgram (..)
     , SuCommand (..)
-    , checkRecDFS
+    , checkNoRec
     , desugarProg
     , macroNamesProg
     ) where
@@ -21,15 +21,16 @@ type Expression = Pure.Expression
 type Command = Pure.Command
  
 -- Some convenient shorthands for pure constructs
-compos   = Pure.Compos
-assign n = Pure.Assign (Pure.Name n)
-while    = Pure.While
-cons     = Pure.Cons
-var      = Pure.Var . Pure.Name
-hd       = Pure.Hd
-tl       = Pure.Tl
-nil      = Pure.Nil
-iseq     = Pure.IsEq
+name fp x = Pure.Name (fp, x)
+compos    = Pure.Compos
+assign    = Pure.Assign
+while     = Pure.While
+cons      = Pure.Cons
+var       = Pure.Var
+hd        = Pure.Hd
+tl        = Pure.Tl
+nil       = Pure.Nil
+iseq      = Pure.IsEq
 
 -- The sugared command syntax - has conditionals, macros and switches in
 -- addition to the pure syntax commands.
@@ -42,15 +43,18 @@ data SuCommand
     | Switch Expression [(Expression, SuCommand)] SuCommand
     deriving (Show, Eq, Ord)
 
+checkNoRec :: FilePath -> M.Map FilePath SuProgram -> Bool
+checkNoRec file = checkNoRecDFS M.empty (S.singleton file)
+
 -- Make sure that there is no recursion in the macro graph by performing a DFS.
 -- Programs are the nodes, and each has an edge to another node/program if it
 -- makes a macro call to it.
-checkRecDFS ::
+checkNoRecDFS ::
     M.Map FilePath (S.Set FilePath) -> -- Visited nodes and their edges
     S.Set FilePath                  -> -- To visit
     M.Map FilePath SuProgram        -> -- The entire graph
     Bool                               -- Result - true iff no cycles
-checkRecDFS ingraph tovisit graph =
+checkNoRecDFS ingraph tovisit graph =
     if (S.null tovisit) || (M.null graph) then
         True
     else
@@ -63,7 +67,7 @@ checkRecDFS ingraph tovisit graph =
     if (not . S.null) (S.intersection curChildren (M.keysSet newIngraph)) then
         False
     else
-        checkRecDFS newIngraph newTovisit graph
+        checkNoRecDFS newIngraph newTovisit graph
 
 -- Get the names of all macro calls made within a given SuProgram
 macroNamesProg :: SuProgram -> S.Set FilePath
@@ -124,17 +128,24 @@ desugar macros suComm = let desugared = desugar macros in case suComm of
 translateConditional :: Expression -> Command -> Command -> Command
 translateConditional guard commTrue commFalse =
     compos (compos (compos (compos (compos
-        (assign "+NOT+EXP+STACK+" (cons (cons nil nil) (var "+NOT+EXP+STACK+")))
-        (assign "+EXP+VAL+STACK+" (cons guard (var "+EXP+VAL+STACK+"))))
-        (while (hd (var "+EXP+VAL+STACK+")) (compos (compos
-            (assign "+EXP+VAL+STACK+" (cons nil (tl (var "+EXP+VAL+STACK+"))))
-            (assign "+NOT+EXP+STACK+" (cons nil (tl (var "+NOT+EXP+STACK+")))))
+        (assign (name "+IMPL+" "+NOT+EXP+STACK+")
+            (cons (cons nil nil) (var (name "+IMPL+" "+NOT+EXP+STACK+"))))
+        (assign (name "+IMPL+" "+EXP+VAL+STACK+")
+            (cons guard (var (name "+IMPL+" "+EXP+VAL+STACK+")))))
+        (while (hd (var (name "+IMPL+" "+EXP+VAL+STACK+"))) (compos (compos
+            (assign (name "+IMPL+" "+EXP+VAL+STACK+")
+                (cons nil (tl (var (name "+IMPL+" "+EXP+VAL+STACK+")))))
+            (assign (name "+IMPL+" "+NOT+EXP+STACK+")
+                (cons nil (tl (var (name "+IMPL+" "+NOT+EXP+STACK+"))))))
             commTrue)))
-        (while (hd (var "+NOT+EXP+STACK+")) (compos
-            (assign "+NOT+EXP+STACK+" (cons nil (tl (var "+NOT+EXP+STACK+"))))
+        (while (hd (var (name "+IMPL+" "+NOT+EXP+STACK+"))) (compos
+            (assign (name "+IMPL+" "+NOT+EXP+STACK+")
+                (cons nil (tl (var (name "+IMPL+" "+NOT+EXP+STACK+")))))
             commFalse)))
-        (assign "+NOT+EXP+STACK+" (tl (var "+NOT+EXP+STACK+"))))
-        (assign "+EXP+VAL+STACK+" (tl (var "+EXP+VAL+STACK+")))
+        (assign (name "+IMPL+" "+NOT+EXP+STACK+")
+            (tl (var (name "+IMPL+" "+NOT+EXP+STACK+")))))
+        (assign (name "+IMPL+" "+EXP+VAL+STACK+")
+            (tl (var (name "+IMPL+" "+EXP+VAL+STACK+"))))
 
 {-- Translate a switch block - first translate to a conditional and then
     translate the conditional to pure syntax.
