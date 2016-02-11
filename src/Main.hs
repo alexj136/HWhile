@@ -9,18 +9,18 @@ import qualified CodeGen as C
 import System.Environment
 import Data.List (intersperse)
 
-readProg :: String -> SuProgram
-readProg = P.parseProg . L.scan "+IMPL+"
+readProg :: FilePath -> String -> SuProgram
+readProg fp = P.parseProg . L.scan fp
 
-readComm :: String -> SuCommand
-readComm = P.parseComm . L.scan "+IMPL+"
+readComm :: FilePath -> String -> SuCommand
+readComm fp = P.parseComm . L.scan fp
 
-readExpr :: String -> S.Expression
-readExpr = P.parseExpr . L.scan "+IMPL+"
+readExpr :: FilePath -> String -> S.Expression
+readExpr fp = P.parseExpr . L.scan fp
 
-evalFromStr :: String -> String -> S.Expression
-evalFromStr argStr progStr =
-    I.evalProg (readExpr argStr) (desugarProg (readProg progStr))
+evalFromStr :: FilePath -> String -> String -> S.Expression
+evalFromStr fp argStr progStr =
+    I.evalProg (readExpr "+IMPL+" argStr) (desugarProg (readProg fp progStr))
 
 helpMessage = concat $ (intersperse "\n") $
     [ "HWhile: a Haskell implementation of the while language, by Alex Jeffery."
@@ -71,11 +71,12 @@ main = do
 
     else if (length args) == 2 then do
         progStr <- readFile (args !! 0)
-        putStrLn $ show (evalFromStr (args !! 1) progStr)
+        putStrLn $ show (evalFromStr (args !! 0) (args !! 1) progStr)
 
     else if (length args) == 3 then do
-        progStr <- readFile (args !! 1)
-        putStrLn $ showFlag (args !! 0) (evalFromStr (args !! 2) progStr)
+        let fp = args !! 1
+        progStr <- readFile fp
+        putStrLn $ showFlag (args !! 0) (evalFromStr fp (args !! 2) progStr)
 
     else
         putStrLn "Invalid argument(s) supplied. Run 'hwhile -h' for help."
