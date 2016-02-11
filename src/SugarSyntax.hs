@@ -128,24 +128,20 @@ desugar macros suComm = let desugared = desugar macros in case suComm of
 translateConditional :: Expression -> Command -> Command -> Command
 translateConditional guard commTrue commFalse =
     compos (compos (compos (compos (compos
-        (assign (name "+IMPL+" "+NOT+EXP+STACK+")
-            (cons (cons nil nil) (var (name "+IMPL+" "+NOT+EXP+STACK+"))))
-        (assign (name "+IMPL+" "+EXP+VAL+STACK+")
-            (cons guard (var (name "+IMPL+" "+EXP+VAL+STACK+")))))
-        (while (hd (var (name "+IMPL+" "+EXP+VAL+STACK+"))) (compos (compos
-            (assign (name "+IMPL+" "+EXP+VAL+STACK+")
-                (cons nil (tl (var (name "+IMPL+" "+EXP+VAL+STACK+")))))
-            (assign (name "+IMPL+" "+NOT+EXP+STACK+")
-                (cons nil (tl (var (name "+IMPL+" "+NOT+EXP+STACK+"))))))
+        (assign notExpStack (cons (cons nil nil) (var notExpStack)))
+        (assign expValStack (cons guard (var expValStack))))
+        (while (hd (var expValStack)) (compos (compos
+            (assign expValStack (cons nil (tl (var expValStack))))
+            (assign notExpStack (cons nil (tl (var notExpStack)))))
             commTrue)))
-        (while (hd (var (name "+IMPL+" "+NOT+EXP+STACK+"))) (compos
-            (assign (name "+IMPL+" "+NOT+EXP+STACK+")
-                (cons nil (tl (var (name "+IMPL+" "+NOT+EXP+STACK+")))))
+        (while (hd (var notExpStack)) (compos
+            (assign notExpStack (cons nil (tl (var notExpStack))))
             commFalse)))
-        (assign (name "+IMPL+" "+NOT+EXP+STACK+")
-            (tl (var (name "+IMPL+" "+NOT+EXP+STACK+")))))
-        (assign (name "+IMPL+" "+EXP+VAL+STACK+")
-            (tl (var (name "+IMPL+" "+EXP+VAL+STACK+"))))
+        (assign notExpStack (tl (var notExpStack))))
+        (assign expValStack (tl (var expValStack)))
+    where
+    expValStack = name "+IMPL+" "+EXP+VAL+STACK+"
+    notExpStack = name "+IMPL+" "+NOT+EXP+STACK+"
 
 {-- Translate a switch block - first translate to a conditional and then
     translate the conditional to pure syntax.
