@@ -44,7 +44,7 @@ import SugarSyntax
     Else    { Token ( TkElse      , p ) }
     Read    { Token ( TkRead      , p ) }
     Write   { Token ( TkWrite     , p ) }
-    Var     { Token ( ITkVar   $$ , p ) }
+    Var     { Token ( ITkGVar  $$ , p ) }
     Int     { Token ( ITkInt   $$ , p ) }
     Macro   { Token ( ITkMacro $$ , p ) }
 
@@ -52,13 +52,13 @@ import SugarSyntax
 
 PROGRAM :: { SuProgram }
 PROGRAM : Read Var SemiCo COMMAND SemiCo Write EXPR {
-        SuProgram (Name ("FN", $2)) $4 $7 }
+        SuProgram (Name $2) $4 $7 }
 
 EXPR :: { Expression }
 EXPR : Cons EXPR EXPR       { Cons $2 $3              }
      | EXPR Dot EXPR        { Cons $1 $3              }
      | Nil                  { Nil                     }
-     | Var                  { Var (Name ("FN", $1))   }
+     | Var                  { Var (Name $1)           }
      | Int                  { intToExp $1 Nil         }
      | OpenBrc EXPR ClosBrc { $2                      }
      | Head EXPR            { Hd $2                   }
@@ -76,8 +76,8 @@ RESTLIST : Comma EXPR RESTLIST { $2 : $3 }
 
 COMMAND :: { SuCommand }
 COMMAND : COMMAND SemiCo COMMAND         { SuCompos $1 $3                }
-        | Var Assign EXPR                { SuAssign (Name ("FN", $1)) $3 }
-        | Var Assign Macro EXPR          { Macro (Name ("FN", $1)) $3 $4 }
+        | Var Assign EXPR                { SuAssign (Name $1) $3         }
+        | Var Assign Macro EXPR          { Macro (Name $1) $3 $4         }
         | While EXPR BLOCK               { SuWhile  $2 $3                }
         | If EXPR BLOCK Else BLOCK       { IfElse   $2 $3 $5             }
         | If EXPR BLOCK                  { IfElse   $2 $3 skip           }

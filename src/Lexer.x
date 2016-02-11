@@ -1,5 +1,11 @@
 {
-module Lexer where
+module Lexer
+    ( Token (..)
+    , TokenType (..)
+    , lineNo
+    , charNo
+    , scan
+    ) where
 }
 
 %wrapper "posn"
@@ -14,7 +20,7 @@ $inmac = [$alpha \. \\ \/]
 tokens :-
     $white+               ; -- Ignore whitespace
     \#.*\n                ; -- Ignore the rest of a line after '#'
-    \.                    { \p s -> Token ( TkDot                    , p ) } -- Infix cons
+    \.                    { \p s -> Token ( TkDot                    , p ) }
     \(                    { \p s -> Token ( TkOpenBrc                , p ) }
     \)                    { \p s -> Token ( TkClosBrc                , p ) }
     \{                    { \p s -> Token ( TkOpenCur                , p ) }
@@ -27,7 +33,7 @@ tokens :-
     \:                    { \p s -> Token ( TkColon                  , p ) }
     "nil"                 { \p s -> Token ( TkNil                    , p ) }
     \;                    { \p s -> Token ( TkSemiCo                 , p ) }
-    "cons"                { \p s -> Token ( TkCons                   , p ) } -- Prefix cons
+    "cons"                { \p s -> Token ( TkCons                   , p ) }
     "hd"                  { \p s -> Token ( TkHead                   , p ) }
     "head"                { \p s -> Token ( TkHead                   , p ) }
     "tl"                  { \p s -> Token ( TkTail                   , p ) }
@@ -47,7 +53,7 @@ tokens :-
 
 {
 
-newtype Token = Token (TokenType, AlexPosn)
+newtype Token = Token (TokenType, AlexPosn) deriving Show
 
 data TokenType
     = TkDot
@@ -75,9 +81,14 @@ data TokenType
     | TkRead
     | TkWrite
     | ITkVar   String
-    | ITkInt   Int
-    | ITkMacro FilePath
+    | ITkGVar  (FilePath, String) -- After lexing, Var tokens are converted into
+    | ITkInt   Int                -- GVar tokens, with the filepath they came
+    | ITkMacro FilePath           -- from. Prevents name clashes with macros.
     deriving (Show, Eq)
+
+-- Main scanning function. Wraps makeGVars and alexScanTokens.
+scan :: FilePath -> String -> [Token]
+scan fp s = makeGVars fp (alexScanTokens s)
 
 -- The default implementation is not quite sufficient - it is more useful for
 -- tokens to be equal regardless of position
@@ -94,30 +105,38 @@ lineNo tok = case tok of Token (_, (AlexPn _ line char)) -> line
 charNo :: Token -> Int
 charNo tok = case tok of Token (_, (AlexPn _ line char)) -> char
 
--- Get a string representation of a token for error message purposes
-instance Show Token where
-    show t = case t of
-        Token (TkDot      , _) -> "'.'"
-        Token (TkOpenBrc  , _) -> "'('"
-        Token (TkClosBrc  , _) -> "')'"
-        Token (TkOpenCur  , _) -> "'{'"
-        Token (TkClosCur  , _) -> "'}'"
-        Token (TkOpenSqu  , _) -> "'['"
-        Token (TkClosSqu  , _) -> "']'"
-        Token (TkComma    , _) -> "','"
-        Token (TkIsEq     , _) -> "'?='"
-        Token (TkAssign   , _) -> "':='"
-        Token (TkNil      , _) -> "'nil'"
-        Token (TkSemiCo   , _) -> "';'"
-        Token (TkCons     , _) -> "'cons'"
-        Token (TkHead     , _) -> "'head'"
-        Token (TkTail     , _) -> "'tail'"
-        Token (TkWhile    , _) -> "'while'"
-        Token (TkIf       , _) -> "'if'"
-        Token (TkElse     , _) -> "'else'"
-        Token (TkRead     , _) -> "'read'"
-        Token (TkWrite    , _) -> "'write'"
-        Token (ITkVar   s , _) -> "variable '" ++ s ++ "'"
-        Token (ITkInt   i , _) -> "integer '" ++ show i ++ "'"
-        Token (ITkMacro f , _) -> "macro <" ++ f ++ ">"
+-- Convert Vars into GVars
+makeGVars :: FilePath -> [Token] -> [Token]
+makeGVars fp = map $ \tk -> case tk of
+    Token ( ITkVar  s        , p )             -> Token ( ITkGVar (fp, s) , p )
+    Token ( ITkGVar (fp', s) , _ ) | fp == fp' -> tk
+    Token ( ITkGVar (fp', s) , _ ) | fp /= fp' -> error "makeGVars repeat error"
+    _                                          -> tk
+
+-- Get a pretty string representation of a token for error message purposes
+prettyPrintToken :: Token -> String
+prettyPrintToken t = case t of
+    Token (TkDot      , _) -> "'.'"
+    Token (TkOpenBrc  , _) -> "'('"
+    Token (TkClosBrc  , _) -> "')'"
+    Token (TkOpenCur  , _) -> "'{'"
+    Token (TkClosCur  , _) -> "'}'"
+    Token (TkOpenSqu  , _) -> "'['"
+    Token (TkClosSqu  , _) -> "']'"
+    Token (TkComma    , _) -> "','"
+    Token (TkIsEq     , _) -> "'?='"
+    Token (TkAssign   , _) -> "':='"
+    Token (TkNil      , _) -> "'nil'"
+    Token (TkSemiCo   , _) -> "';'"
+    Token (TkCons     , _) -> "'cons'"
+    Token (TkHead     , _) -> "'head'"
+    Token (TkTail     , _) -> "'tail'"
+    Token (TkWhile    , _) -> "'while'"
+    Token (TkIf       , _) -> "'if'"
+    Token (TkElse     , _) -> "'else'"
+    Token (TkRead     , _) -> "'read'"
+    Token (TkWrite    , _) -> "'write'" 
+    Token (ITkVar   s , _) -> "variable  '" ++ s ++ "'"
+    Token (ITkInt   i , _) -> "integer  '" ++ show i ++ "'"
+    Token (ITkMacro f , _) -> "macro <" ++ f ++ ">"
 }
