@@ -85,8 +85,8 @@ macroNames sc = case sc of
         (S.unions ((map (macroNames . snd)) l))
 
 -- Desugar a program, that is, convert it to pure while syntax
-desugarProg :: SuProgram -> Pure.Program
-desugarProg (SuProgram n sc e) = Pure.Program n (desugar M.empty sc) e
+desugarProg :: M.Map FilePath SuProgram -> SuProgram -> Pure.Program
+desugarProg macros (SuProgram n sc e) = Pure.Program n (desugar macros sc) e
 
 -- Desugar a command
 desugar :: M.Map FilePath SuProgram -> SuCommand -> Command

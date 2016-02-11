@@ -19,8 +19,8 @@ readExpr :: FilePath -> String -> S.Expression
 readExpr fp = P.parseExpr . L.scan fp
 
 evalFromStr :: FilePath -> String -> String -> S.Expression
-evalFromStr fp argStr progStr =
-    I.evalProg (readExpr "+IMPL+" argStr) (desugarProg (readProg fp progStr))
+evalFromStr fp argStr progStr = I.evalProg (readExpr "+IMPL+" argStr)
+    (desugarProg (error "macros not yet implemented") (readProg fp progStr))
 
 helpMessage = concat $ (intersperse "\n") $
     [ "HWhile: a Haskell implementation of the while language, by Alex Jeffery."
