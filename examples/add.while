@@ -1,10 +1,10 @@
-# A simple addition program
+// A simple addition program
 
-read XY;
-X := hd XY;
-Y := tl XY;
-while X {
-    Y := ( nil . Y );
-    X := tl X
-};
-write Y
+read XY {
+    X := hd XY;
+    Y := tl XY;
+    while X {
+        Y := ( nil . Y );
+        X := tl X
+    }
+} write Y

@@ -1,21 +1,21 @@
-# Demonstration of conditionals - xor implementation
-read AB;
-A := hd AB;
-B := tl AB;
-if A {
-    if B {
-        X := nil
+// Demonstration of conditionals - xor implementation
+read AB {
+    A := hd AB;
+    B := tl AB;
+    if A {
+        if B {
+            X := nil
+        }
+        else {
+            X := cons nil nil
+        }
     }
     else {
-        X := cons nil nil
+        if B {
+            X := cons nil nil
+        }
+        else {
+            X := nil
+        }
     }
-}
-else {
-    if B {
-        X := cons nil nil
-    }
-    else {
-        X := nil
-    }
-};
-write X
+} write X

@@ -21,7 +21,8 @@ $inmac = [$alpha \. \\ \/]
 
 tokens :-
     $white+               ; -- Ignore whitespace
-    \#.*\n                ; -- Ignore the rest of a line after '#'
+    \/\/.*\n              ; -- Ignore the rest of a line after '//'
+    \(\*(.|\n)*\*\)       ; -- (* Multiline comments *)
     \.                    { \p s -> NearlyTok ( TkDot                    , p ) }
     \(                    { \p s -> NearlyTok ( TkOpenBrc                , p ) }
     \)                    { \p s -> NearlyTok ( TkClosBrc                , p ) }
@@ -30,16 +31,14 @@ tokens :-
     \[                    { \p s -> NearlyTok ( TkOpenSqu                , p ) }
     \]                    { \p s -> NearlyTok ( TkClosSqu                , p ) }
     \,                    { \p s -> NearlyTok ( TkComma                  , p ) }
-    \?\=                  { \p s -> NearlyTok ( TkIsEq                   , p ) }
     \:\=                  { \p s -> NearlyTok ( TkAssign                 , p ) }
     \:                    { \p s -> NearlyTok ( TkColon                  , p ) }
+    \=                    { \p s -> NearlyTok ( TkIsEq                   , p ) }
     "nil"                 { \p s -> NearlyTok ( TkNil                    , p ) }
     \;                    { \p s -> NearlyTok ( TkSemiCo                 , p ) }
     "cons"                { \p s -> NearlyTok ( TkCons                   , p ) }
-    "hd"                  { \p s -> NearlyTok ( TkHead                   , p ) }
-    "head"                { \p s -> NearlyTok ( TkHead                   , p ) }
-    "tl"                  { \p s -> NearlyTok ( TkTail                   , p ) }
-    "tail"                { \p s -> NearlyTok ( TkTail                   , p ) }
+    "hd"                  { \p s -> NearlyTok ( TkHd                     , p ) }
+    "tl"                  { \p s -> NearlyTok ( TkTl                     , p ) }
     "while"               { \p s -> NearlyTok ( TkWhile                  , p ) }
     "switch"              { \p s -> NearlyTok ( TkSwitch                 , p ) }
     "case"                { \p s -> NearlyTok ( TkCase                   , p ) }
@@ -74,8 +73,8 @@ data TokenType
     | TkNil
     | TkSemiCo
     | TkCons
-    | TkHead
-    | TkTail
+    | TkHd
+    | TkTl
     | TkWhile
     | TkSwitch
     | TkCase
@@ -85,8 +84,8 @@ data TokenType
     | TkRead
     | TkWrite
     | ITkVar   String
-    | ITkInt   Int                -- GVar tokens, with the filepath they came
-    | ITkMacro FilePath           -- from. Prevents name clashes with macros.
+    | ITkInt   Int
+    | ITkMacro FilePath
     deriving (Show, Eq)
 
 -- Main scanning function. Wraps makeGVars and alexScanTokens.
@@ -132,13 +131,13 @@ prettyPrintToken t = case t of
     Token (_, TkOpenSqu  , _) -> "'['"
     Token (_, TkClosSqu  , _) -> "']'"
     Token (_, TkComma    , _) -> "','"
-    Token (_, TkIsEq     , _) -> "'?='"
+    Token (_, TkIsEq     , _) -> "'='"
     Token (_, TkAssign   , _) -> "':='"
     Token (_, TkNil      , _) -> "'nil'"
     Token (_, TkSemiCo   , _) -> "';'"
     Token (_, TkCons     , _) -> "'cons'"
-    Token (_, TkHead     , _) -> "'head'"
-    Token (_, TkTail     , _) -> "'tail'"
+    Token (_, TkHd       , _) -> "'hd'"
+    Token (_, TkTl       , _) -> "'tl'"
     Token (_, TkWhile    , _) -> "'while'"
     Token (_, TkIf       , _) -> "'if'"
     Token (_, TkElse     , _) -> "'else'"

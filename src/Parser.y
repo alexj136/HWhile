@@ -16,7 +16,7 @@ import SugarSyntax
 %right IsEq
 %right ConsPre
 %right ConsInf
-%right Head Tail
+%right Hd Tl
 %left SemiCo
 
 %token
@@ -33,8 +33,8 @@ import SugarSyntax
     Nil     { Token ( _, TkNil       , _ ) }
     SemiCo  { Token ( _, TkSemiCo    , _ ) }
     Cons    { Token ( _, TkCons      , _ ) }
-    Head    { Token ( _, TkHead      , _ ) }
-    Tail    { Token ( _, TkTail      , _ ) }
+    Hd      { Token ( _, TkHd        , _ ) }
+    Tl      { Token ( _, TkTl        , _ ) }
     While   { Token ( _, TkWhile     , _ ) }
     Switch  { Token ( _, TkSwitch    , _ ) }
     Case    { Token ( _, TkCase      , _ ) }
@@ -51,8 +51,8 @@ import SugarSyntax
 %%
 
 PROGRAM :: { SuProgram }
-PROGRAM : Read Var SemiCo COMMAND SemiCo Write EXPR {
-        SuProgram (Name (pathOf $2, varName $2)) $4 $7 }
+PROGRAM : Read Var BLOCK Write EXPR {
+              SuProgram (Name (pathOf $2, varName $2)) $3 $5 }
 
 EXPR :: { Expression }
 EXPR : Cons EXPR EXPR       { Cons $2 $3                         }
@@ -61,8 +61,8 @@ EXPR : Cons EXPR EXPR       { Cons $2 $3                         }
      | Var                  { Var (Name (pathOf $1, varName $1)) }
      | Int                  { intToExp $1 Nil                    }
      | OpenBrc EXPR ClosBrc { $2                                 }
-     | Head EXPR            { Hd $2                              }
-     | Tail EXPR            { Tl $2                              }
+     | Hd EXPR              { Hd $2                              }
+     | Tl EXPR              { Tl $2                              }
      | IsEq EXPR EXPR       { IsEq $2 $3                         }
      | EXPLIST              { listToWhileList $1                 }
 
@@ -84,7 +84,8 @@ COMMAND : COMMAND SemiCo COMMAND         { SuCompos $1 $3                      }
         | Switch EXPR OpenCur SWITCHCONT { Switch   $2 (fst $4) (snd $4)       }
 
 BLOCK :: { SuCommand }
-BLOCK : OpenCur COMMAND ClosCur { $2 }
+BLOCK : OpenCur COMMAND ClosCur { $2   }
+      | OpenCur         ClosCur { skip }
 
 SWITCHCONT :: { ([(Expression, SuCommand)], SuCommand) }
 SWITCHCONT : Case EXPR Colon COMMAND SWITCHCONT { (($2, $4) : fst $5, snd $5) }
@@ -116,5 +117,5 @@ listToWhileList []    = Nil
 -- A command that does nothing (simplifies ifs without elses and switches
 -- without defaults
 skip :: SuCommand
-skip = SuAssign (Name ("+IMPL+", "+DEAD+")) (Var (Name ("+IMPL+", "+DEAD+")))
+skip = SuAssign (Name ("+IMPL+", "+SKIP+")) (Var (Name ("+IMPL+", "+SKIP+")))
 }

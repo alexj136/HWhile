@@ -1,78 +1,81 @@
-# Program that takes two trees X and Y as input ('consed' together as we can
-# only take one input) and returns 1 if they are equal, and 0 if they are not.
-# It does not use the ?= operator.
+(* Program that takes two trees X and Y as input ('consed' together as we can
+ * only take one input) and returns 1 if they are equal, and 0 if they are not.
+ * It does not use the ?= operator.
+ *)
 
-read XY;
+read XY {
 
-# Initally assume that the input is invalid (i.e. nil)
-TODOLIST := nil;
-RESULT := 0;
+    // Initally assume that the input is invalid (i.e. nil)
+    TODOLIST := nil;
+    RESULT := 0;
 
-# If the input IS valid, we will enter this loop, so set up to run the algorithm
-while XY {
-    RESULT := 1;
-    TODOLIST := cons XY nil;
-    XY := nil
-};
-
-while TODOLIST {
-
-    # Pop off the next pair from our list as A and B
-    AB := hd TODOLIST;
-    TODOLIST := tl TODOLIST;
-    A := hd AB;
-    B := tl AB;
-
-    # Start by assuming the trees are different, and changing our mind if they
-    # are both nil or both not nil
-    FOUNDDIFF := cons nil nil;
-
-    # Declare a tree AISNIL that will be 1 if A is nil, and 0 otherwise
-    AISNIL := cons nil nil;
-    COPYA := A;
-    while COPYA { COPYA := nil; AISNIL := nil };
-
-    # Declare a tree BISNIL that will be 1 if B is nil, and 0 otherwise
-    BISNIL := cons nil nil;
-    COPYB := B;
-    while COPYB { COPYB := nil; BISNIL := nil };
-
-    # If both are nil, we get to the inner loop, and set FOUNDDIFF to nil
-    COPYAISNIL := AISNIL;
-    COPYBISNIL := BISNIL;
-    while COPYAISNIL {
-        COPYAISNIL := nil;
-        while COPYBISNIL {
-            COPYBISNIL := nil;
-
-            FOUNDDIFF := nil
-        }
+    // If the input IS valid, we will enter this loop, so set up to run the
+    // algorithm
+    while XY {
+        RESULT := 1;
+        TODOLIST := cons XY nil;
+        XY := nil
     };
 
-    # If both are not nil, set FOUNDDIFF to nil and add the subtrees to TODOLIST
-    COPYA := A;
-    COPYB := B;
-    while COPYA {
-        COPYA := nil;
-        while COPYB {
-            COPYB := nil;
+    while TODOLIST {
 
+        // Pop off the next pair from our list as A and B
+        AB := hd TODOLIST;
+        TODOLIST := tl TODOLIST;
+        A := hd AB;
+        B := tl AB;
+
+        // Start by assuming the trees are different, and changing our mind if
+        // they are both nil or both not nil
+        FOUNDDIFF := cons nil nil;
+
+        // Declare a tree AISNIL that will be 1 if A is nil, and 0 otherwise
+        AISNIL := cons nil nil;
+        COPYA := A;
+        while COPYA { COPYA := nil; AISNIL := nil };
+
+        // Declare a tree BISNIL that will be 1 if B is nil, and 0 otherwise
+        BISNIL := cons nil nil;
+        COPYB := B;
+        while COPYB { COPYB := nil; BISNIL := nil };
+
+        // If both are nil, we get to the inner loop, and set FOUNDDIFF to nil
+        COPYAISNIL := AISNIL;
+        COPYBISNIL := BISNIL;
+        while COPYAISNIL {
+            COPYAISNIL := nil;
+            while COPYBISNIL {
+                COPYBISNIL := nil;
+
+                FOUNDDIFF := nil
+            }
+        };
+
+        // If both are not nil, set FOUNDDIFF to nil and add the subtrees to
+        // TODOLIST
+        COPYA := A;
+        COPYB := B;
+        while COPYA {
+            COPYA := nil;
+            while COPYB {
+                COPYB := nil;
+
+                FOUNDDIFF := nil;
+                NEW1 := cons hd A hd B;
+                NEW2 := cons tl A tl B;
+                TODOLIST := cons NEW1 TODOLIST;
+                TODOLIST := cons NEW2 TODOLIST
+            }
+        };
+
+        // If FOUNDDIFF was never set to nil, we have found a difference, so
+        // stop everything and return 0;
+        while FOUNDDIFF {
             FOUNDDIFF := nil;
-            NEW1 := cons hd A hd B;
-            NEW2 := cons tl A tl B;
-            TODOLIST := cons NEW1 TODOLIST;
-            TODOLIST := cons NEW2 TODOLIST
+            TODOLIST := nil;
+            RESULT := nil
         }
-    };
 
-    # If FOUNDDIFF was never set to nil, we have found a difference, so stop
-    # everything and return 0;
-    while FOUNDDIFF {
-        FOUNDDIFF := nil;
-        TODOLIST := nil;
-        RESULT := nil
     }
 
-};
-
-write RESULT
+} write RESULT

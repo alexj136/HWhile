@@ -55,7 +55,11 @@ helpMessage = concat $ (intersperse "\n") $
     , "                will all display as while trees"
     ]
 
--- Open all files needed
+-- Open all files needed. Call 'buildFileMap M.empty (S.singleton filePath) to
+-- open the file at 'filePath', and all files that the program in 'filePath'
+-- uses, and all files that those files use, etc. Fails if there are circular
+-- dependencies. Returns results in a map from file paths to the corresponding
+-- programs. These can be passed to SugarSyntax.desugarProg.
 buildFileMap ::
     M.Map FilePath (S.Set FilePath, SuProgram) ->
     S.Set FilePath                             ->

@@ -1,11 +1,11 @@
-# An example of switch grammar. If the input is 0, 1, or 2, then the output is
-# the same as the input. Otherwise, the output is 3.
+// An example of switch grammar. If the input is 0, 1, or 2, then the output is
+// the same as the input. Otherwise, the output is 3.
 
-read X;
-switch X {
-    case nil         : Y:= 0
-    case nil.nil     : Y:= 1
-    case nil.nil.nil : Y:= 2
-    default          : Y:= 3
-};
-write Y
+read X {
+    switch X {
+        case nil         : Y:= 0
+        case nil.nil     : Y:= 1
+        case nil.nil.nil : Y:= 2
+        default          : Y:= 3
+    }
+} write Y
