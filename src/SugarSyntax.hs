@@ -1,7 +1,6 @@
 module SugarSyntax
     ( SuProgram (..)
     , SuCommand (..)
-    , checkNoRec
     , desugarProg
     , macroNamesProg
     ) where
@@ -42,32 +41,6 @@ data SuCommand
     | Macro Pure.Name FilePath Expression
     | Switch Expression [(Expression, SuCommand)] SuCommand
     deriving (Show, Eq, Ord)
-
-checkNoRec :: FilePath -> M.Map FilePath SuProgram -> Bool
-checkNoRec file = checkNoRecDFS M.empty (S.singleton file)
-
--- Make sure that there is no recursion in the macro graph by performing a DFS.
--- Programs are the nodes, and each has an edge to another node/program if it
--- makes a macro call to it.
-checkNoRecDFS ::
-    M.Map FilePath (S.Set FilePath) -> -- Visited nodes and their edges
-    S.Set FilePath                  -> -- To visit
-    M.Map FilePath SuProgram        -> -- The entire graph
-    Bool                               -- Result - true iff no cycles
-checkNoRecDFS ingraph tovisit graph =
-    if (S.null tovisit) || (M.null graph) then
-        True
-    else
-    let current     = S.findMin tovisit
-        curChildren = macroNamesProg (graph M.! current)
-        tovisitRest = S.deleteMin tovisit
-        newIngraph  = M.insert current curChildren ingraph
-        newTovisit  = S.union tovisitRest curChildren
-    in
-    if (not . S.null) (S.intersection curChildren (M.keysSet newIngraph)) then
-        False
-    else
-        checkNoRecDFS newIngraph newTovisit graph
 
 -- Get the names of all macro calls made within a given SuProgram
 macroNamesProg :: SuProgram -> S.Set FilePath

@@ -1,26 +1,36 @@
 module Main where
 
+import qualified Data.Map as M
+import qualified Data.Set as S
+
 import qualified Lexer as L
 import qualified Parser as P
-import qualified PureSyntax as S
+import qualified PureSyntax as PS
 import SugarSyntax
 import qualified PureInterpreter as I
 import qualified CodeGen as C
 import System.Environment
 import Data.List (intersperse)
 
-readProg :: FilePath -> String -> SuProgram
-readProg fp = P.parseProg . L.scan fp
+pathAndTextToProg :: FilePath -> String -> SuProgram
+pathAndTextToProg fp = P.parseProg . L.scan fp
 
-readComm :: FilePath -> String -> SuCommand
-readComm fp = P.parseComm . L.scan fp
+pathAndTextToComm :: FilePath -> String -> SuCommand
+pathAndTextToComm fp = P.parseComm . L.scan fp
 
-readExpr :: FilePath -> String -> S.Expression
-readExpr fp = P.parseExpr . L.scan fp
+pathAndTextToExpr :: FilePath -> String -> PS.Expression
+pathAndTextToExpr fp = P.parseExpr . L.scan fp
 
-evalFromStr :: FilePath -> String -> String -> S.Expression
-evalFromStr fp argStr progStr = I.evalProg (readExpr "+IMPL+" argStr)
-    (desugarProg (error "macros not yet implemented") (readProg fp progStr))
+-- Run a program given the file path, and a map from file paths to files that
+-- are in the macro tree for the given file path
+runFromParts ::
+    FilePath                    ->  -- The 'main' file
+    (M.Map FilePath SuProgram)  ->  -- The map from filenames to programs
+    String                      ->  -- The argument string
+    PS.Expression                   -- The result of the execution
+runFromParts mainFile fileMap argStr =
+    I.evalProg (pathAndTextToExpr "+IMPL+" argStr)
+        (desugarProg fileMap (fileMap M.! mainFile))
 
 helpMessage = concat $ (intersperse "\n") $
     [ "HWhile: a Haskell implementation of the while language, by Alex Jeffery."
@@ -45,19 +55,41 @@ helpMessage = concat $ (intersperse "\n") $
     , "                will all display as while trees"
     ]
 
+-- Open all files needed
+buildFileMap ::
+    M.Map FilePath (S.Set FilePath, SuProgram) ->
+    S.Set FilePath                             ->
+    IO (M.Map FilePath SuProgram)
+buildFileMap ingraph tovisit =
+    if S.null tovisit then
+        return $ M.map snd ingraph
+    else do
+        let curFilePath  = S.findMin tovisit
+        let tovisitRest  = S.deleteMin tovisit
+        curFileText <- readFile curFilePath
+        let curSuProg   = pathAndTextToProg curFilePath curFileText
+        let curChildren = macroNamesProg curSuProg
+        let newIngraph  = M.insert curFilePath (curChildren, curSuProg) ingraph
+        let newTovisit  = S.union tovisitRest curChildren
+        if (not . S.null) (S.intersection curChildren (M.keysSet newIngraph))
+        then
+            error "Recursive macros found. Macros may not be recursive."
+        else
+            buildFileMap newIngraph newTovisit
+
 -- Print an expression in a certain way according to the given command line
 -- argument (see Main.hs for a description of what these should do)
-showFlag :: String -> S.Expression -> String
+showFlag :: String -> PS.Expression -> String
 showFlag f exp = case f of
-    "-i"   -> case S.parseInt exp of
+    "-i"   -> case PS.parseInt exp of
         Just i  -> show i
         Nothing -> "E"
-    "-iv"  -> case S.parseInt exp of
+    "-iv"  -> case PS.parseInt exp of
         Just i  -> show i
         Nothing -> show exp
-    "-l"   -> show (S.toActualList exp)
-    "-li"  -> show (map (S.showIntExp False) (S.toActualList exp))
-    "-liv" -> show (map (S.showIntExp True ) (S.toActualList exp))
+    "-l"   -> show (PS.toActualList exp)
+    "-li"  -> show (map (PS.showIntExp False) (PS.toActualList exp))
+    "-liv" -> show (map (PS.showIntExp True ) (PS.toActualList exp))
     _      -> "Invalid argument(s) supplied. Run 'hwhile -h' for help."
 
 main = do
@@ -70,13 +102,17 @@ main = do
         putStrLn helpMessage
 
     else if (length args) == 2 then do
-        progStr <- readFile (args !! 0)
-        putStrLn $ show (evalFromStr (args !! 0) (args !! 1) progStr)
+        let mainFile = args !! 0
+        let argStr   = args !! 1
+        fileMap <- buildFileMap M.empty (S.singleton mainFile)
+        putStrLn $ show (runFromParts mainFile fileMap argStr)
 
     else if (length args) == 3 then do
-        let fp = args !! 1
-        progStr <- readFile fp
-        putStrLn $ showFlag (args !! 0) (evalFromStr fp (args !! 2) progStr)
+        let flagStr  = args !! 0
+        let mainFile = args !! 1
+        let argStr   = args !! 2
+        fileMap <- buildFileMap M.empty (S.singleton mainFile)
+        putStrLn $ showFlag flagStr (runFromParts mainFile fileMap argStr)
 
     else
         putStrLn "Invalid argument(s) supplied. Run 'hwhile -h' for help."
