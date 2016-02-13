@@ -40,7 +40,7 @@ instance Show Command where
     show c = showC 0 c
 
 showC :: Int -> Command -> String
-showC i (While  x c)   = (tabs i) ++ "while " ++ show x ++ " do {\n"
+showC i (While  x c)   = (tabs i) ++ "while " ++ show x ++ " {\n"
                       ++ showC (i + 1) c ++ "\n"
                       ++ (tabs i) ++ "}"
 showC i (Assign v x)   = (tabs i) ++ (show v) ++ " := " ++ show x
@@ -60,7 +60,7 @@ instance Show Expression where
     show (Cons a b ) = '(' : show a ++ '.' : show b ++ ")"
     show (Hd   x   ) = "hd " ++ show x
     show (Tl   x   ) = "tl " ++ show x
-    show (IsEq a b ) = "=? " ++ show a ++ ' ' : show b
+    show (IsEq a b ) = show a ++ " = " ++ show b
 
 -- Convert a while integer expression into a decimal number string. If the
 -- isVerbose argument is True, unparsable expressions will be displayed in full.
