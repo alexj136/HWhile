@@ -63,7 +63,7 @@ EXPR : Cons EXPR EXPR       { Cons $2 $3                         }
      | OpenBrc EXPR ClosBrc { $2                                 }
      | Hd EXPR              { Hd $2                              }
      | Tl EXPR              { Tl $2                              }
-     | IsEq EXPR EXPR       { IsEq $2 $3                         }
+     | EXPR IsEq EXPR       { IsEq $1 $3                         }
      | EXPLIST              { listToWhileList $1                 }
 
 EXPLIST :: { [Expression] }
@@ -79,8 +79,8 @@ COMMAND : COMMAND SemiCo COMMAND         { SuCompos $1 $3                      }
         | Var Assign EXPR         { SuAssign (Name (pathOf $1, varName $1)) $3 }
         | Var Assign Macro EXPR   { Macro (Name (pathOf $1, varName $1)) $3 $4 }
         | While EXPR BLOCK               { SuWhile  $2 $3                      }
-        | If EXPR BLOCK Else BLOCK       { IfElse   $2 $3 $5                   }
-        | If EXPR BLOCK                  { IfElse   $2 $3 skip                 }
+        | If EXPR BLOCK Else BLOCK       { SuIfElse $2 $3 $5                   }
+        | If EXPR BLOCK                  { SuIfElse $2 $3 skip                 }
         | Switch EXPR OpenCur SWITCHCONT { Switch   $2 (fst $4) (snd $4)       }
 
 BLOCK :: { SuCommand }

@@ -16,6 +16,7 @@ data Command
     = Compos Command    Command
     | Assign Name       Expression
     | While  Expression Command
+    | IfElse Expression Command Command
     deriving (Eq, Ord)
 
 data Expression
@@ -31,20 +32,22 @@ instance Show Name where
     show (Name (fp, x)) = "<<" ++ x ++ " of " ++ fp ++ ">>"
 
 instance Show Program where
-    show (Program n c w) = "read " ++ (show n) ++ ";\n"
-                        ++ (show c) ++ ";\n"
-                        ++ "write " ++ (show w)
+    show (Program n c w) = "read " ++ (show n) ++ " {\n"
+                        ++ (show c) ++ "\n"
+                        ++ "} write " ++ (show w)
 
 instance Show Command where
     show c = showC 0 c
 
 showC :: Int -> Command -> String
-showC i (While  x c) = (tabs i) ++ "while " ++ show x ++ " do {\n"
-                    ++ showC (i + 1) c ++ "\n"
-                    ++ (tabs i) ++ "}"
-showC i (Assign v x) = (tabs i) ++ (show v) ++ " := " ++ show x
-showC i (Compos a b) = (showC i a) ++ ";\n"
-                    ++ (showC i b)
+showC i (While  x c)   = (tabs i) ++ "while " ++ show x ++ " do {\n"
+                      ++ showC (i + 1) c ++ "\n"
+                      ++ (tabs i) ++ "}"
+showC i (Assign v x)   = (tabs i) ++ (show v) ++ " := " ++ show x
+showC i (Compos a b)   = (showC i a) ++ ";\n"
+                      ++ (showC i b)
+showC i (IfElse e a b) = (tabs i) ++ "if " ++ show e ++ " { " ++ show a
+                      ++ " } else { " ++ show b ++ " }"
 
 tabs :: Int -> String
 tabs x | x <  0 = error "negative tabs"

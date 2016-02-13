@@ -28,14 +28,20 @@ evalProg input (Program rd comm wrt) = evalExprNorm str' wrt
 --     the new store.
 --   Sequential Composition is evaluated by first evaluating command one with an
 --     initial store, and then evaluating command two with the resulting store.
+--   Conditionals are evaluated by first evaluating the condition. If the
+--     condition is false (nil), the 'else-block' is evaluated. Otherwise the
+--     'then-block' is evaluated.
 evalComm :: Store -> Command -> Store
-evalComm str (Compos a b) = evalComm str' b
+evalComm str (Compos a b)   = evalComm str' b
     where str' = evalComm str a
-evalComm str (Assign v x) = M.insert v (evalExprNorm str x) str
-evalComm str (While  x c) = case evalExprNorm str x of
+evalComm str (Assign v x)   = M.insert v (evalExprNorm str x) str
+evalComm str (While  x c)   = case evalExprNorm str x of
     Nil -> str
     _   -> evalComm str' (While x c)
         where str' = evalComm str c
+evalComm str (IfElse e a b) = case evalExprNorm str e of
+    Nil -> evalComm str b
+    _   -> evalComm str a
 
 -- Expression evaluation is straightforward - see page 40 of Neil Jones' book
 -- for more detail. This function performs a single reduction step.
