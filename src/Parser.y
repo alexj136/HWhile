@@ -20,33 +20,47 @@ import SugarSyntax
 %left SemiCo
 
 %token
-    Dot     { Token ( _, TkDot       , _ ) }
-    OpenBrc { Token ( _, TkOpenBrc   , _ ) }
-    ClosBrc { Token ( _, TkClosBrc   , _ ) }
-    OpenCur { Token ( _, TkOpenCur   , _ ) }
-    ClosCur { Token ( _, TkClosCur   , _ ) }
-    OpenSqu { Token ( _, TkOpenSqu   , _ ) }
-    ClosSqu { Token ( _, TkClosSqu   , _ ) }
-    Comma   { Token ( _, TkComma     , _ ) }
-    IsEq    { Token ( _, TkIsEq      , _ ) }
-    Assign  { Token ( _, TkAssign    , _ ) }
-    Nil     { Token ( _, TkNil       , _ ) }
-    SemiCo  { Token ( _, TkSemiCo    , _ ) }
-    Cons    { Token ( _, TkCons      , _ ) }
-    Hd      { Token ( _, TkHd        , _ ) }
-    Tl      { Token ( _, TkTl        , _ ) }
-    While   { Token ( _, TkWhile     , _ ) }
-    Switch  { Token ( _, TkSwitch    , _ ) }
-    Case    { Token ( _, TkCase      , _ ) }
-    Default { Token ( _, TkDefault   , _ ) }
-    Colon   { Token ( _, TkColon     , _ ) }
-    If      { Token ( _, TkIf        , _ ) }
-    Else    { Token ( _, TkElse      , _ ) }
-    Read    { Token ( _, TkRead      , _ ) }
-    Write   { Token ( _, TkWrite     , _ ) }
-    Var     { Token ( _, ITkVar   _  , _ ) }
-    Int     { Token ( _, ITkInt   $$ , _ ) }
-    Macro   { Token ( _, ITkMacro $$ , _ ) }
+    Dot       { Token ( _, TkDot         , _ ) }
+    OpenBrc   { Token ( _, TkOpenBrc     , _ ) }
+    ClosBrc   { Token ( _, TkClosBrc     , _ ) }
+    OpenCur   { Token ( _, TkOpenCur     , _ ) }
+    ClosCur   { Token ( _, TkClosCur     , _ ) }
+    OpenSqu   { Token ( _, TkOpenSqu     , _ ) }
+    ClosSqu   { Token ( _, TkClosSqu     , _ ) }
+    Comma     { Token ( _, TkComma       , _ ) }
+    IsEq      { Token ( _, TkIsEq        , _ ) }
+    Assign    { Token ( _, TkAssign      , _ ) }
+    Nil       { Token ( _, TkNil         , _ ) }
+    SemiCo    { Token ( _, TkSemiCo      , _ ) }
+    Cons      { Token ( _, TkCons        , _ ) }
+    Hd        { Token ( _, TkHd          , _ ) }
+    Tl        { Token ( _, TkTl          , _ ) }
+    While     { Token ( _, TkWhile       , _ ) }
+    Switch    { Token ( _, TkSwitch      , _ ) }
+    Case      { Token ( _, TkCase        , _ ) }
+    Default   { Token ( _, TkDefault     , _ ) }
+    Colon     { Token ( _, TkColon       , _ ) }
+    If        { Token ( _, TkIf          , _ ) }
+    Else      { Token ( _, TkElse        , _ ) }
+    Read      { Token ( _, TkRead        , _ ) }
+    Write     { Token ( _, TkWrite       , _ ) }
+    AtAsgn    { Token ( _, TkAtomAsgn    , _ ) }
+    AtDoAsgn  { Token ( _, TkAtomDoAsgn  , _ ) }
+    AtWhile   { Token ( _, TkAtomWhile   , _ ) }
+    AtDoWhile { Token ( _, TkAtomDoWhile , _ ) }
+    AtIf      { Token ( _, TkAtomIf      , _ ) }
+    AtDoIf    { Token ( _, TkAtomDoIf    , _ ) }
+    AtVar     { Token ( _, TkAtomVar     , _ ) }
+    AtQuote   { Token ( _, TkAtomQuote   , _ ) }
+    AtHd      { Token ( _, TkAtomHd      , _ ) }
+    AtDoHd    { Token ( _, TkAtomDoHd    , _ ) }
+    AtTl      { Token ( _, TkAtomTl      , _ ) }
+    AtDoTl    { Token ( _, TkAtomDoTl    , _ ) }
+    AtCons    { Token ( _, TkAtomCons    , _ ) }
+    AtDoCons  { Token ( _, TkAtomDoCons  , _ ) }
+    Var       { Token ( _, ITkVar   _    , _ ) }
+    Int       { Token ( _, ITkInt   $$   , _ ) }
+    Macro     { Token ( _, ITkMacro $$   , _ ) }
 
 %%
 
@@ -65,6 +79,20 @@ EXPR : Cons EXPR EXPR       { Cons $2 $3                         }
      | Tl EXPR              { Tl $2                              }
      | EXPR IsEq EXPR       { IsEq $1 $3                         }
      | EXPLIST              { listToWhileList $1                 }
+     | AtAsgn               { intToExp  2 Nil                    }
+     | AtDoAsgn             { intToExp  3 Nil                    }
+     | AtWhile              { intToExp  5 Nil                    }
+     | AtDoWhile            { intToExp  7 Nil                    }
+     | AtIf                 { intToExp 11 Nil                    }
+     | AtDoIf               { intToExp 13 Nil                    }
+     | AtVar                { intToExp 17 Nil                    }
+     | AtQuote              { intToExp 19 Nil                    }
+     | AtHd                 { intToExp 23 Nil                    }
+     | AtDoHd               { intToExp 29 Nil                    }
+     | AtTl                 { intToExp 31 Nil                    }
+     | AtDoTl               { intToExp 37 Nil                    }
+     | AtCons               { intToExp 41 Nil                    }
+     | AtDoCons             { intToExp 43 Nil                    }
 
 EXPLIST :: { [Expression] }
 EXPLIST : OpenSqu ClosSqu       { []      }

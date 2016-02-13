@@ -47,6 +47,20 @@ tokens :-
     "else"                { \p s -> NearlyTok ( TkElse                   , p ) }
     "read"                { \p s -> NearlyTok ( TkRead                   , p ) }
     "write"               { \p s -> NearlyTok ( TkWrite                  , p ) }
+    "@asgn"               { \p s -> NearlyTok ( TkAtomAsgn               , p ) }
+    "@do_asgn"            { \p s -> NearlyTok ( TkAtomDoAsgn             , p ) }
+    "@while"              { \p s -> NearlyTok ( TkAtomWhile              , p ) }
+    "@do_while"           { \p s -> NearlyTok ( TkAtomDoWhile            , p ) }
+    "@if"                 { \p s -> NearlyTok ( TkAtomIf                 , p ) }
+    "@do_if"              { \p s -> NearlyTok ( TkAtomDoIf               , p ) }
+    "@var"                { \p s -> NearlyTok ( TkAtomVar                , p ) }
+    "@quote"              { \p s -> NearlyTok ( TkAtomQuote              , p ) }
+    "@hd"                 { \p s -> NearlyTok ( TkAtomHd                 , p ) }
+    "@do_hd"              { \p s -> NearlyTok ( TkAtomDoHd               , p ) }
+    "@tl"                 { \p s -> NearlyTok ( TkAtomTl                 , p ) }
+    "@do_tl"              { \p s -> NearlyTok ( TkAtomDoTl               , p ) }
+    "@cons"               { \p s -> NearlyTok ( TkAtomCons               , p ) }
+    "@do_cons"            { \p s -> NearlyTok ( TkAtomDoCons             , p ) }
     $alpha[$alnum \_ \']* { \p s -> NearlyTok ( ITkVar s                 , p ) }
     "0"                   { \p s -> NearlyTok ( ITkInt (read s)          , p ) }
     [1-9][$digit]*        { \p s -> NearlyTok ( ITkInt (read s)          , p ) }
@@ -83,6 +97,20 @@ data TokenType
     | TkElse
     | TkRead
     | TkWrite
+    | TkAtomAsgn
+    | TkAtomDoAsgn
+    | TkAtomWhile
+    | TkAtomDoWhile
+    | TkAtomIf
+    | TkAtomDoIf
+    | TkAtomVar
+    | TkAtomQuote
+    | TkAtomHd
+    | TkAtomDoHd
+    | TkAtomTl
+    | TkAtomDoTl
+    | TkAtomCons
+    | TkAtomDoCons
     | ITkVar   String
     | ITkInt   Int
     | ITkMacro FilePath
@@ -123,27 +151,41 @@ completeToken fp (NearlyTok (ty, pos)) = Token (fp, ty, pos)
 -- Get a pretty string representation of a token for error message purposes
 prettyPrintToken :: Token -> String
 prettyPrintToken t = case t of
-    Token (_, TkDot      , _) -> "'.'"
-    Token (_, TkOpenBrc  , _) -> "'('"
-    Token (_, TkClosBrc  , _) -> "')'"
-    Token (_, TkOpenCur  , _) -> "'{'"
-    Token (_, TkClosCur  , _) -> "'}'"
-    Token (_, TkOpenSqu  , _) -> "'['"
-    Token (_, TkClosSqu  , _) -> "']'"
-    Token (_, TkComma    , _) -> "','"
-    Token (_, TkIsEq     , _) -> "'='"
-    Token (_, TkAssign   , _) -> "':='"
-    Token (_, TkNil      , _) -> "'nil'"
-    Token (_, TkSemiCo   , _) -> "';'"
-    Token (_, TkCons     , _) -> "'cons'"
-    Token (_, TkHd       , _) -> "'hd'"
-    Token (_, TkTl       , _) -> "'tl'"
-    Token (_, TkWhile    , _) -> "'while'"
-    Token (_, TkIf       , _) -> "'if'"
-    Token (_, TkElse     , _) -> "'else'"
-    Token (_, TkRead     , _) -> "'read'"
-    Token (_, TkWrite    , _) -> "'write'" 
-    Token (_, ITkVar   s , _) -> "variable  '" ++ s ++ "'"
-    Token (_, ITkInt   i , _) -> "integer  '" ++ show i ++ "'"
-    Token (_, ITkMacro f , _) -> "macro <" ++ f ++ ">"
+    Token (_, TkDot         , _) -> "'.'"
+    Token (_, TkOpenBrc     , _) -> "'('"
+    Token (_, TkClosBrc     , _) -> "')'"
+    Token (_, TkOpenCur     , _) -> "'{'"
+    Token (_, TkClosCur     , _) -> "'}'"
+    Token (_, TkOpenSqu     , _) -> "'['"
+    Token (_, TkClosSqu     , _) -> "']'"
+    Token (_, TkComma       , _) -> "','"
+    Token (_, TkIsEq        , _) -> "'='"
+    Token (_, TkAssign      , _) -> "':='"
+    Token (_, TkNil         , _) -> "'nil'"
+    Token (_, TkSemiCo      , _) -> "';'"
+    Token (_, TkCons        , _) -> "'cons'"
+    Token (_, TkHd          , _) -> "'hd'"
+    Token (_, TkTl          , _) -> "'tl'"
+    Token (_, TkWhile       , _) -> "'while'"
+    Token (_, TkIf          , _) -> "'if'"
+    Token (_, TkElse        , _) -> "'else'"
+    Token (_, TkRead        , _) -> "'read'"
+    Token (_, TkWrite       , _) -> "'write'" 
+    Token (_, TkAtomAsgn    , _) -> "'@asgn'"
+    Token (_, TkAtomDoAsgn  , _) -> "'@do_asgn'"
+    Token (_, TkAtomWhile   , _) -> "'@while'"
+    Token (_, TkAtomDoWhile , _) -> "'@do_while'"
+    Token (_, TkAtomIf      , _) -> "'@if'"
+    Token (_, TkAtomDoIf    , _) -> "'@do_if'"
+    Token (_, TkAtomVar     , _) -> "'@var'"
+    Token (_, TkAtomQuote   , _) -> "'@quote'"
+    Token (_, TkAtomHd      , _) -> "'@hd'"
+    Token (_, TkAtomDoHd    , _) -> "'@do_hd'"
+    Token (_, TkAtomTl      , _) -> "'@tl'"
+    Token (_, TkAtomDoTl    , _) -> "'@do_tl'"
+    Token (_, TkAtomCons    , _) -> "'@cons'"
+    Token (_, TkAtomDoCons  , _) -> "'@do_cons'"
+    Token (_, ITkVar   s    , _) -> "variable  '" ++ s ++ "'"
+    Token (_, ITkInt   i    , _) -> "integer  '" ++ show i ++ "'"
+    Token (_, ITkMacro f    , _) -> "macro <" ++ f ++ ">"
 }

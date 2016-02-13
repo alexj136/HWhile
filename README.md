@@ -38,6 +38,20 @@ The grammar below gives exactly the concrete syntax of this implementation:
             | NAT
             | []
             | [ EXP LIST
+            | @asgn
+            | @do_asgn
+            | @while
+            | @do_while
+            | @if
+            | @do_if
+            | @var
+            | @quote
+            | @hd
+            | @do_hd
+            | @tl
+            | @do_tl
+            | @cons
+            | @do_cons
           
     LIST  ::= , EXP LIST
             | ]
