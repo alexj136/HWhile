@@ -17,9 +17,9 @@ The grammar below gives exactly the concrete syntax of this implementation:
 
     CMD   ::= CMD; CMD                      // Sequential composition
             | ID := EXP                     // Assignment
-            | while EXP { CMD }             // While loops
-            | if EXP { CMD } else { CMD }   // If-then-else statements
-            | if EXP { CMD }                // If-then statements
+            | while EXP BLOCK               // While loops
+            | if EXP BLOCK else BLOCK       // If-then-else statements
+            | if EXP BLOCK                  // If-then statements
             | switch EXP { CASES            // Switch statements
             | ID := <ID> EXP                // Macro calls
 
@@ -59,6 +59,8 @@ The grammar below gives exactly the concrete syntax of this implementation:
     NAT   ::= 0|[1-9][0-9]+
           
     ID    ::= [a-zA-Z_'][a-zA-Z0-9_']*
+
+### Semantics
 
 ### Instructions
 To run the project, you must first install cabal, and the alex and happy cabal
