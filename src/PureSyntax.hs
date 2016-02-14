@@ -9,7 +9,7 @@ import qualified Data.Map as M
 newtype Name = Name (FilePath, String) deriving (Eq, Ord)
 
 data Program
-    = Program Name Command Expression
+    = Program Name Command Name
     deriving (Eq, Ord)
 
 data Command

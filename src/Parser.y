@@ -65,34 +65,36 @@ import SugarSyntax
 %%
 
 PROGRAM :: { SuProgram }
-PROGRAM : Read Var BLOCK Write EXPR {
-              SuProgram (Name (pathOf $2, varName $2)) $3 $5 }
+PROGRAM : Read VAR BLOCK Write VAR { SuProgram $2 $3 $5 }
+
+VAR :: { Name }
+VAR : Var { Name (pathOf $1, varName $1) }
 
 EXPR :: { Expression }
-EXPR : Cons EXPR EXPR       { Cons $2 $3                         }
-     | EXPR Dot EXPR        { Cons $1 $3                         }
-     | Nil                  { Nil                                }
-     | Var                  { Var (Name (pathOf $1, varName $1)) }
-     | Int                  { intToExp $1 Nil                    }
-     | OpenBrc EXPR ClosBrc { $2                                 }
-     | Hd EXPR              { Hd $2                              }
-     | Tl EXPR              { Tl $2                              }
-     | EXPR IsEq EXPR       { IsEq $1 $3                         }
-     | EXPLIST              { listToWhileList $1                 }
-     | AtAsgn               { intToExp  2 Nil                    }
-     | AtDoAsgn             { intToExp  3 Nil                    }
-     | AtWhile              { intToExp  5 Nil                    }
-     | AtDoWhile            { intToExp  7 Nil                    }
-     | AtIf                 { intToExp 11 Nil                    }
-     | AtDoIf               { intToExp 13 Nil                    }
-     | AtVar                { intToExp 17 Nil                    }
-     | AtQuote              { intToExp 19 Nil                    }
-     | AtHd                 { intToExp 23 Nil                    }
-     | AtDoHd               { intToExp 29 Nil                    }
-     | AtTl                 { intToExp 31 Nil                    }
-     | AtDoTl               { intToExp 37 Nil                    }
-     | AtCons               { intToExp 41 Nil                    }
-     | AtDoCons             { intToExp 43 Nil                    }
+EXPR : Cons EXPR EXPR       { Cons $2 $3         }
+     | EXPR Dot EXPR        { Cons $1 $3         }
+     | Nil                  { Nil                }
+     | VAR                  { Var $1             }
+     | Int                  { intToExp $1 Nil    }
+     | OpenBrc EXPR ClosBrc { $2                 }
+     | Hd EXPR              { Hd $2              }
+     | Tl EXPR              { Tl $2              }
+     | EXPR IsEq EXPR       { IsEq $1 $3         }
+     | EXPLIST              { listToWhileList $1 }
+     | AtAsgn               { intToExp  2 Nil    }
+     | AtDoAsgn             { intToExp  3 Nil    }
+     | AtWhile              { intToExp  5 Nil    }
+     | AtDoWhile            { intToExp  7 Nil    }
+     | AtIf                 { intToExp 11 Nil    }
+     | AtDoIf               { intToExp 13 Nil    }
+     | AtVar                { intToExp 17 Nil    }
+     | AtQuote              { intToExp 19 Nil    }
+     | AtHd                 { intToExp 23 Nil    }
+     | AtDoHd               { intToExp 29 Nil    }
+     | AtTl                 { intToExp 31 Nil    }
+     | AtDoTl               { intToExp 37 Nil    }
+     | AtCons               { intToExp 41 Nil    }
+     | AtDoCons             { intToExp 43 Nil    }
 
 EXPLIST :: { [Expression] }
 EXPLIST : OpenSqu ClosSqu       { []      }
@@ -103,13 +105,13 @@ RESTLIST : Comma EXPR RESTLIST { $2 : $3 }
          | ClosSqu             { []      }
 
 COMMAND :: { SuCommand }
-COMMAND : COMMAND SemiCo COMMAND         { SuCompos $1 $3                      }
-        | Var Assign EXPR         { SuAssign (Name (pathOf $1, varName $1)) $3 }
-        | Var Assign Macro EXPR   { Macro (Name (pathOf $1, varName $1)) $3 $4 }
-        | While EXPR BLOCK               { SuWhile  $2 $3                      }
-        | If EXPR BLOCK Else BLOCK       { SuIfElse $2 $3 $5                   }
-        | If EXPR BLOCK                  { SuIfElse $2 $3 skip                 }
-        | Switch EXPR OpenCur SWITCHCONT { Switch   $2 (fst $4) (snd $4)       }
+COMMAND : COMMAND SemiCo COMMAND         { SuCompos $1 $3                }
+        | VAR Assign EXPR                { SuAssign $1 $3                }
+        | VAR Assign Macro EXPR          { Macro $1 $3 $4                }
+        | While EXPR BLOCK               { SuWhile  $2 $3                }
+        | If EXPR BLOCK Else BLOCK       { SuIfElse $2 $3 $5             }
+        | If EXPR BLOCK                  { SuIfElse $2 $3 skip           }
+        | Switch EXPR OpenCur SWITCHCONT { Switch   $2 (fst $4) (snd $4) }
 
 BLOCK :: { SuCommand }
 BLOCK : OpenCur COMMAND ClosCur { $2   }

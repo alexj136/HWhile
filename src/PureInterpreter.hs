@@ -17,7 +17,9 @@ type Store = M.Map Name Expression
 -- store that contains the read variable with the value of the input, and
 -- output (or 'write') the value of the write-variable in the resulting store.
 evalProg :: Expression -> Program -> Expression
-evalProg input (Program rd comm wrt) = evalExprNorm str' wrt
+evalProg input (Program rd comm wrt) = case M.lookup wrt str' of
+    Nothing -> Nil
+    Just e  -> e
     where str' = evalComm (M.singleton rd input) comm
 
 -- Commands update the contents of the store:

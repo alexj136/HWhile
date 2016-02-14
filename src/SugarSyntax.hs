@@ -14,7 +14,7 @@ import qualified Data.Set   as S
 import qualified Data.Map   as M
 import qualified PureSyntax as Pure
 
-data SuProgram = SuProgram Pure.Name SuCommand Expression deriving Eq
+data SuProgram = SuProgram Pure.Name SuCommand Pure.Name deriving Eq
 
 type Expression = Pure.Expression
 type Command = Pure.Command
@@ -72,7 +72,7 @@ desugar macros suComm = let desugared = desugar macros in case suComm of
     Macro x f e        -> case M.lookup f macros of
         Just (SuProgram rd mcom wrt) ->
             compos (Pure.Assign rd e)
-                (compos (desugared mcom) (Pure.Assign x wrt))
+                (compos (desugared mcom) (Pure.Assign x (var wrt)))
         Nothing -> error $ "Macro '" ++ f ++ "' not found while desugaring"
     Switch e cases def -> translateSwitch e
         (map (\(e, c) -> (e, desugared c)) cases) (desugared def)

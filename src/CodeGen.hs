@@ -11,7 +11,7 @@ type VarMap = M.Map Name Int
 -- Create a VarMap for the given Program
 varMapProg :: Program -> VarMap
 varMapProg (Program rd comm wrt) =
-    varMapExpr (varMapComm (M.singleton rd 0) comm) wrt
+    varMapExpr (varMapComm (M.singleton rd 0) comm) (Var wrt)
 
 -- Extend the given VarMap with variables in the given Command
 varMapComm :: VarMap -> Command -> VarMap
@@ -45,7 +45,7 @@ codeGenProg (Program rd comm wrt) = concat $ intersperse "\n" $
     , "    Node **store = setUpStore(" ++ show (maximum (M.elems vm)) ++ ");"
     , ""
     ] ++ codeGenComm 1 vm comm ++
-    [ "    printTreeLinear(" ++ codeGenExpr vm wrt ++ ");"
+    [ "    printTreeLinear(" ++ codeGenExpr vm (Var wrt) ++ ");"
     , "    putchar('\\n');"
     , "    freeStore(" ++ show (maximum (M.elems vm)) ++ ", store);"
     , "    return 0;"
