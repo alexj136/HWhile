@@ -7,7 +7,6 @@ import qualified Parser          as P
 import qualified PureSyntax      as PS
 import SugarSyntax
 import qualified PureInterpreter as I
-import qualified CodeGen         as C
 import qualified Unparser        as U
 import System.Environment
 import Data.List (intersperse)
