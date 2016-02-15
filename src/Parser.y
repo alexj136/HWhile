@@ -9,6 +9,7 @@ import SugarSyntax
 %name parseProg PROGRAM
 %name parseExpr EXPR
 %name parseComm COMMAND
+%name parseVal  VAL
 
 %tokentype { Token }
 %error { parseError }
@@ -81,7 +82,10 @@ EXPR : Cons EXPR EXPR       { Cons $2 $3         }
      | Tl EXPR              { Tl $2              }
      | EXPR IsEq EXPR       { IsEq $1 $3         }
      | EXPLIST              { listToWhileList $1 }
-     | AtAsgn               { intToExp  2 Nil    }
+     | ATOM                 { $1                 }
+
+ATOM :: { Expression }
+ATOM : AtAsgn               { intToExp  2 Nil    }
      | AtDoAsgn             { intToExp  3 Nil    }
      | AtWhile              { intToExp  5 Nil    }
      | AtDoWhile            { intToExp  7 Nil    }
@@ -97,12 +101,12 @@ EXPR : Cons EXPR EXPR       { Cons $2 $3         }
      | AtDoCons             { intToExp 43 Nil    }
 
 EXPLIST :: { [Expression] }
-EXPLIST : OpenSqu ClosSqu       { []      }
-        | OpenSqu EXPR RESTLIST { $2 : $3 }
+EXPLIST : OpenSqu ClosSqu          { []      }
+        | OpenSqu EXPR RESTEXPLIST { $2 : $3 }
 
-RESTLIST :: { [Expression] }
-RESTLIST : Comma EXPR RESTLIST { $2 : $3 }
-         | ClosSqu             { []      }
+RESTEXPLIST :: { [Expression] }
+RESTEXPLIST : Comma EXPR RESTEXPLIST { $2 : $3 }
+            | ClosSqu                { []      }
 
 COMMAND :: { SuCommand }
 COMMAND : COMMAND SemiCo COMMAND         { SuCompos $1 $3                }
@@ -122,12 +126,28 @@ SWITCHCONT : Case EXPR Colon COMMAND SWITCHCONT { (($2, $4) : fst $5, snd $5) }
            | ClosCur                            { ([]               , skip  ) }
            | Default Colon COMMAND ClosCur      { ([]               , $3    ) }
 
+-- For command line input
+VAL :: { Expression }
+VAL : Nil                 { Nil                }
+    | VAL Dot VAL         { Cons $1 $3         }
+    | Int                 { intToExp $1 Nil    }
+    | OpenBrc VAL ClosBrc { $2                 }
+    | VALLIST             { listToWhileList $1 }
+    | ATOM                { $1                 }
+
+VALLIST :: { [Expression] }
+VALLIST : OpenSqu ClosSqu         { []      }
+        | OpenSqu VAL RESTVALLIST { $2 : $3 }
+
+RESTVALLIST :: { [Expression] }
+RESTVALLIST : Comma VAL RESTVALLIST { $2 : $3 }
+            | ClosSqu               { []      }
 {
 parseError :: [Token] -> a
 parseError []           = error "Parse error: reached end of file while parsing"
 parseError (tok : rest) = error $ concat
     [ "Parse error: "
-    , (show tok)
+    , (prettyPrintToken tok)
     , " at line "
     , (show (lineNo tok))
     , ", char "

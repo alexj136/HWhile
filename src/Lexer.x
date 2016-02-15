@@ -7,6 +7,7 @@ module Lexer
     , pathOf
     , varName
     , scan
+    , prettyPrintToken
     ) where
 }
 
@@ -48,19 +49,19 @@ tokens :-
     "read"                { \p s -> NearlyTok ( TkRead                   , p ) }
     "write"               { \p s -> NearlyTok ( TkWrite                  , p ) }
     "@asgn"               { \p s -> NearlyTok ( TkAtomAsgn               , p ) }
-    "@do_asgn"            { \p s -> NearlyTok ( TkAtomDoAsgn             , p ) }
+    "@doAsgn"             { \p s -> NearlyTok ( TkAtomDoAsgn             , p ) }
     "@while"              { \p s -> NearlyTok ( TkAtomWhile              , p ) }
-    "@do_while"           { \p s -> NearlyTok ( TkAtomDoWhile            , p ) }
+    "@doWhile"            { \p s -> NearlyTok ( TkAtomDoWhile            , p ) }
     "@if"                 { \p s -> NearlyTok ( TkAtomIf                 , p ) }
-    "@do_if"              { \p s -> NearlyTok ( TkAtomDoIf               , p ) }
+    "@doIf"               { \p s -> NearlyTok ( TkAtomDoIf               , p ) }
     "@var"                { \p s -> NearlyTok ( TkAtomVar                , p ) }
     "@quote"              { \p s -> NearlyTok ( TkAtomQuote              , p ) }
     "@hd"                 { \p s -> NearlyTok ( TkAtomHd                 , p ) }
-    "@do_hd"              { \p s -> NearlyTok ( TkAtomDoHd               , p ) }
+    "@doHd"               { \p s -> NearlyTok ( TkAtomDoHd               , p ) }
     "@tl"                 { \p s -> NearlyTok ( TkAtomTl                 , p ) }
-    "@do_tl"              { \p s -> NearlyTok ( TkAtomDoTl               , p ) }
+    "@doTl"               { \p s -> NearlyTok ( TkAtomDoTl               , p ) }
     "@cons"               { \p s -> NearlyTok ( TkAtomCons               , p ) }
-    "@do_cons"            { \p s -> NearlyTok ( TkAtomDoCons             , p ) }
+    "@doCons"             { \p s -> NearlyTok ( TkAtomDoCons             , p ) }
     $alpha[$alnum \_ \']* { \p s -> NearlyTok ( ITkVar s                 , p ) }
     "0"                   { \p s -> NearlyTok ( ITkInt (read s)          , p ) }
     [1-9][$digit]*        { \p s -> NearlyTok ( ITkInt (read s)          , p ) }
@@ -142,7 +143,7 @@ pathOf (Token (fp, _, _)) = fp
 -- get the variable name in an ITkVar token. Fails if the token isn't an ITkVar.
 varName :: Token -> String
 varName (Token (_, ITkVar s, _)) = s
-varName _                       = error "Not an ITkVar token"
+varName _                        = error "Not an ITkVar token"
 
 -- Complete NearlyTokens into Tokens by adding FilePath info
 completeToken :: FilePath -> NearlyTok -> Token

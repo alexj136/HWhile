@@ -20,6 +20,9 @@ pathAndTextToComm fp = P.parseComm . L.scan fp
 pathAndTextToExpr :: FilePath -> String -> PS.Expression
 pathAndTextToExpr fp = P.parseExpr . L.scan fp
 
+pathAndTextToVal  :: FilePath -> String -> PS.Expression
+pathAndTextToVal  fp = P.parseVal  . L.scan fp
+
 -- Run a program given the file path, and a map from file paths to files that
 -- are in the macro tree for the given file path
 runFromParts ::
@@ -28,7 +31,7 @@ runFromParts ::
     String                      ->  -- The argument string
     PS.Expression                   -- The result of the execution
 runFromParts mainFile fileMap argStr =
-    I.evalProg (pathAndTextToExpr "+IMPL+" argStr)
+    I.evalProg (pathAndTextToVal "+IMPL+" argStr)
         (desugarProg fileMap (fileMap M.! mainFile))
 
 helpMessage = concat $ (intersperse "\n") $

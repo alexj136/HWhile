@@ -39,19 +39,19 @@ The grammar below gives exactly the concrete syntax of this implementation:
             | []
             | [ EXP LIST
             | @asgn
-            | @do_asgn
+            | @doAsgn
             | @while
-            | @do_while
+            | @doWhile
             | @if
-            | @do_if
+            | @doIf
             | @var
             | @quote
             | @hd
-            | @do_hd
+            | @doHd
             | @tl
-            | @do_tl
+            | @doTl
             | @cons
-            | @do_cons
+            | @doCons
           
     LIST  ::= , EXP LIST
             | ]
