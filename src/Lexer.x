@@ -22,7 +22,7 @@ $inmac = [$alpha \. \\ \/]
 
 tokens :-
     $white+               ; -- Ignore whitespace
-    \/\/.*\n              ; -- Ignore the rest of a line after '//'
+    \/\/.*\n              ; -- // single line comments
     \(\*(.|\n)*\*\)       ; -- (* Multiline comments *)
     \.                    { \p s -> NearlyTok ( TkDot                    , p ) }
     \(                    { \p s -> NearlyTok ( TkOpenBrc                , p ) }

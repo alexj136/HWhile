@@ -1,0 +1,13 @@
+(* Weird *)
+
+read X {
+
+    (* Weird *)
+    X := 1134
+    // weird
+
+} write X
+
+(* Weird *)
+
+// weird
