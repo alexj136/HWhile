@@ -18,7 +18,7 @@ $lower = a-z
 $upper = A-Z
 $alpha = [$lower $upper]
 $alnum = [$alpha $digit]
-$inmac = [$alpha \. \\ \/]
+$inmac = [$alpha \. \\ \/ \_]
 
 tokens :-
     $white+               ; -- Ignore whitespace
