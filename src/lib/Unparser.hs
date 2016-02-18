@@ -18,9 +18,10 @@ varMapProg (Program rd comm wrt) =
 -- Extend the given VarMap with variables in the given Command
 varMapComm :: VarMap -> Command -> VarMap
 varMapComm vm comm = case comm of
-    Compos a b -> varMapComm (varMapComm vm a) b
-    Assign v x -> varMapExpr (varMapName vm v) x
-    While  x c -> varMapComm (varMapExpr vm x) c
+    Compos a b     -> varMapComm (varMapComm vm a) b
+    Assign v x     -> varMapExpr (varMapName vm v) x
+    While  x c     -> varMapComm (varMapExpr vm x) c
+    IfElse e c1 c2 -> varMapExpr (varMapComm (varMapComm vm c2) c1) e
 
 -- Extend the given VarMap with variables in the given Expression
 varMapExpr :: VarMap -> Expression -> VarMap
@@ -40,13 +41,31 @@ unparse :: Program -> String
 unparse p = unparseProg 0 (varMapProg p) p
 
 unparseProg :: Int -> VarMap -> Program -> String
-unparseProg ts vm (Program x c y) = concat $ intersperse "\n"
+unparseProg ts vm (Program x c y) = concat $ intersperse "\n" $ map (tabs ts ++)
     [ "[ " ++ show (vm M.! x)
     , ", " ++ unparseComm (succ ts) vm c
     , ", " ++ show (vm M.! y)
-    , "] "
+    , "]"
     ]
 
 unparseComm :: Int -> VarMap -> Command -> String
-unparseComm ts vm comm = case comm of
-    While e c -> undefined
+unparseComm ts vm comm = tabs ts ++ case comm of
+    Compos a b     -> unparseCommList ts vm (flatten comm)
+    Assign v x     -> "[ @asgn , " ++ show (vm M.! v) ++ " , "
+                   ++ unparseExpr ts vm x ++ " ]"
+    While x c      -> "[ @while , " ++ unparseExpr ts vm x ++ " , "
+                   ++ unparseComm ts vm c ++ " ]"
+    IfElse e c1 c2 -> "[ @if , " ++ unparseExpr ts vm e ++ " , "
+                   ++ unparseComm ts vm c1 ++ " , "
+                   ++ unparseComm ts vm c2 ++ " ]"
+
+-- Unfold a sequential composition into a list of commands
+flatten :: Command -> [Command]
+flatten c = case c of { Compos c1 c2 -> flatten c1 ++ flatten c2 ; _ -> [c] }
+
+unparseCommList :: Int -> VarMap -> [Command] -> String
+unparseCommList _  _  []     = "[]"
+unparseCommList ts vm (c:cs) = undefined
+
+unparseExpr :: Int -> VarMap -> Expression -> String
+unparseExpr ts vm expr = undefined
