@@ -48,8 +48,14 @@ main = do
             (testRun "((nil.nil).nil)"       xorProg "(nil.nil)")
         , test "Test xor program: f, f -> f"
             (testRun "(nil.nil)"             xorProg "nil"      )
+        , test "Test add program: 3 + 4 -> 7"
+            (testRun "(3.4)"                 addProg "7"        )
+        , test "Test add program: 0 + 0 -> 0"
+            (testRun "(0.0)"                 addProg "0"        )
         ]
     if all snd tests then
         exitSuccess
-    else
+    else do
+        putStr $ concat $ map ((\s ->"FAILED: " ++ s ++ "\n"). fst)
+            (filter (not . snd) tests)
         exitFailure
