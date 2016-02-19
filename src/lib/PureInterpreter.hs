@@ -9,18 +9,16 @@ Jones' book on pages 40 & 41.
 import PureSyntax
 import qualified Data.Map as M
 
--- While stores are maps from variable names to expressions, i.e. the values of
+-- While stores are maps from variable names to trees, i.e. the values of
 -- variables
-type Store = M.Map Name Expression
+type Store = M.Map Name ETree
 
 -- To evaluate a program, we evaluate the program's command with the initial
 -- store that contains the read variable with the value of the input, and
 -- output (or 'write') the value of the write-variable in the resulting store.
-evalProg :: Expression -> Program -> Expression
-evalProg input (Program rd comm wrt) = case M.lookup wrt str' of
-    Nothing -> Nil
-    Just e  -> e
-    where str' = evalComm (M.singleton rd input) comm
+evalProg :: Expression -> Program -> ETree
+evalProg input (Program rd comm wrt) = M.findWithDefault ENil wrt store
+    where store = evalComm (evalComm M.empty (Assign rd input)) comm
 
 -- Commands update the contents of the store:
 --   Assignments update the assignee variable with the assigned value.
@@ -34,36 +32,24 @@ evalProg input (Program rd comm wrt) = case M.lookup wrt str' of
 --     condition is false (nil), the 'else-block' is evaluated. Otherwise the
 --     'then-block' is evaluated.
 evalComm :: Store -> Command -> Store
-evalComm str (Compos a b)   = evalComm str' b
-    where str' = evalComm str a
-evalComm str (Assign v x)   = M.insert v (evalExprNorm str x) str
-evalComm str (While  x c)   = case evalExprNorm str x of
-    Nil -> str
-    _   -> evalComm str' (While x c)
-        where str' = evalComm str c
-evalComm str (IfElse e a b) = case evalExprNorm str e of
-    Nil -> evalComm str b
-    _   -> evalComm str a
+evalComm store (Compos a b)   = evalComm store' b
+    where store' = evalComm store a
+evalComm store (Assign v x)   = M.insert v (evalExpr store x) store
+evalComm store (While  x c)   = case evalExpr store x of
+    ENil -> store
+    _    -> evalComm store' (While x c)
+        where store' = evalComm store c
+evalComm store (IfElse e a b) = case evalExpr store e of
+    ENil -> evalComm store b
+    _    -> evalComm store a
 
 -- Expression evaluation is straightforward - see page 40 of Neil Jones' book
 -- for more detail. This function performs a single reduction step.
-evalExpr :: Store -> Expression -> Expression
-evalExpr str expr = case expr of
-    Var s         -> case M.lookup s str of { Nothing -> Nil ; Just x -> x }
-    Hd (Cons a b) -> a
-    Hd Nil        -> Nil
-    Hd other      -> Hd (evalExpr str other)
-    Tl (Cons a b) -> b
-    Tl Nil        -> Nil
-    Tl other      -> Tl (evalExpr str other)
-    IsEq a b | evalExprNorm str a == evalExprNorm str b -> Cons Nil Nil
-             | otherwise                                -> Nil
-    Cons a b      -> Cons (evalExpr str a) (evalExpr str b)
-    Nil           -> Nil
-
--- Repeatedly evaluate an expression until it reaches a 'normal form' i.e. until
--- it cannot be evaluated any further.
-evalExprNorm :: Store -> Expression -> Expression
-evalExprNorm str exp | nextReduce == exp = exp
-                     | otherwise         = evalExprNorm str nextReduce
-    where nextReduce = evalExpr str exp
+evalExpr :: Store -> Expression -> ETree
+evalExpr store expr = let eval = evalExpr store in case expr of
+    Var n    -> M.findWithDefault ENil n store
+    Hd  e    -> case eval e of { ENil -> ENil; ECons h _ -> h}
+    Tl  e    -> case eval e of { ENil -> ENil; ECons _ t -> t}
+    IsEq a b -> if eval a == eval b then ECons ENil ENil else ENil
+    Cons h t -> ECons (eval h) (eval t)
+    Nil      -> ENil

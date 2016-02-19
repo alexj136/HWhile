@@ -61,38 +61,44 @@ tabs x | x <  0 = error "negative tabs"
        | x >  0 = "    " ++ tabs (x - 1)
 
 instance Show Expression where
-    show (Var  s   ) = show s
-    show (Nil      ) = "nil"
-    show (Cons a b ) = '(' : show a ++ '.' : show b ++ ")"
-    show (Hd   x   ) = "hd " ++ show x
-    show (Tl   x   ) = "tl " ++ show x
-    show (IsEq a b ) = show a ++ " = " ++ show b
+    show (Var  s  ) = show s
+    show (Nil     ) = "nil"
+    show (Cons a b) = "(cons " ++ show a ++ " " ++ show b ++ ")"
+    show (Hd   x  ) = "hd " ++ show x
+    show (Tl   x  ) = "tl " ++ show x
+    show (IsEq a b) = show a ++ " = " ++ show b
+
+-- ETrees are evaluated expressions - just cons and nil.
+data ETree = ECons ETree ETree | ENil deriving (Eq, Ord)
+
+instance Show ETree where
+    show  ENil       = "nil"
+    show (ECons l r) = "<" ++ show l ++ "." ++ show r ++ ">"
 
 -- Convert a while integer expression into a decimal number string. If the
 -- isVerbose argument is True, unparsable expressions will be displayed in full.
 -- If it is False, unparsable expressions yield "E".
-showIntExp :: Bool -> Expression -> String
-showIntExp isVerbose exp = case parseInt exp of
+showIntTree :: Bool -> ETree -> String
+showIntTree isVerbose e = case parseInt e of
     Just i              -> show i
-    Nothing | isVerbose -> show exp
+    Nothing | isVerbose -> show e
     Nothing | otherwise -> "E"
 
 -- Parse an Int from a while Expression. Not all while expressions encode
 -- integers, so return a value in the Maybe monad.
-parseInt :: Expression -> Maybe Int
+parseInt :: ETree -> Maybe Int
 parseInt = parseIntAcc 0
     where
-    parseIntAcc :: Int -> Expression -> Maybe Int
-    parseIntAcc acc Nil          = Just acc
-    parseIntAcc acc (Cons Nil x) = parseIntAcc (acc + 1) x
-    parseIntAcc acc _            = Nothing
+    parseIntAcc :: Int -> ETree -> Maybe Int
+    parseIntAcc acc ENil           = Just acc
+    parseIntAcc acc (ECons ENil x) = parseIntAcc (acc + 1) x
+    parseIntAcc acc _              = Nothing
 
 -- Convert a while expression encoded list into a haskell list
-toActualList :: Expression -> [Expression]
-toActualList = reverse . (toActualListAcc [])
+toHaskellList :: ETree -> [ETree]
+toHaskellList = reverse . (toHaskellListAcc [])
     where
-    toActualListAcc :: [Expression] -> Expression -> [Expression]
-    toActualListAcc acc exp = case exp of
-        Nil              -> acc
-        (Cons elem rest) -> toActualListAcc (elem : acc) rest
-        _                -> error "Cannot print unreduced expression"
+    toHaskellListAcc :: [ETree] -> ETree -> [ETree]
+    toHaskellListAcc acc exp = case exp of
+        ENil              -> acc
+        (ECons elem rest) -> toHaskellListAcc (elem : acc) rest

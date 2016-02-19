@@ -28,7 +28,7 @@ runFromParts ::
     FilePath                    ->  -- The 'main' file
     (M.Map FilePath SuProgram)  ->  -- The map from filenames to programs
     String                      ->  -- The argument string
-    PS.Expression                   -- The result of the execution
+    PS.ETree                        -- The result of the execution
 runFromParts mainFile fileMap argStr =
     I.evalProg (pathAndTextToVal "+IMPL+" argStr)
         (desugarProg fileMap (fileMap M.! mainFile))

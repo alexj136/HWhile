@@ -27,7 +27,7 @@ xorProg    = loadProg "xor"
 testRun :: String -> IO PS.Program -> String -> IO Bool
 testRun argString ioProg expectedResultString = do
     prog <- ioProg
-    return (I.evalProg argExpr prog == expRes)
+    return (I.evalProg argExpr prog == I.evalExpr M.empty expRes)
     where
         argExpr = P.parseExpr (L.scan "+TEST+" argString)
         expRes  = P.parseExpr (L.scan "+TEST+" expectedResultString)

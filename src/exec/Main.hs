@@ -38,17 +38,17 @@ helpMessage = concat $ (intersperse "\n") $
 
 -- Print an expression in a certain way according to the given command line
 -- argument (see Main.hs for a description of what these should do)
-showFlag :: String -> PS.Expression -> String
-showFlag f exp = case f of
-    "-i"   -> case PS.parseInt exp of
+showFlag :: String -> PS.ETree -> String
+showFlag f tree = case f of
+    "-i"   -> case PS.parseInt tree of
         Just i  -> show i
         Nothing -> "E"
-    "-iv"  -> case PS.parseInt exp of
+    "-iv"  -> case PS.parseInt tree of
         Just i  -> show i
-        Nothing -> show exp
-    "-l"   -> show (PS.toActualList exp)
-    "-li"  -> show (map (PS.showIntExp False) (PS.toActualList exp))
-    "-liv" -> show (map (PS.showIntExp True ) (PS.toActualList exp))
+        Nothing -> show tree
+    "-l"   -> show (PS.toHaskellList tree)
+    "-li"  -> show (map (PS.showIntTree False) (PS.toHaskellList tree))
+    "-liv" -> show (map (PS.showIntTree True ) (PS.toHaskellList tree))
     _      -> "Invalid argument(s) supplied. Run 'hwhile -h' for help."
 
 main = do
