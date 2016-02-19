@@ -9,7 +9,7 @@ import SugarSyntax
 %name parseProg PROGRAM
 %name parseExpr EXPR
 %name parseComm COMMAND
-%name parseVal  VAL
+%name parseLVal LVAL
 
 %tokentype { Token }
 %error { parseError }
@@ -78,16 +78,13 @@ VAR : Var { Name (tkPath $1, tkVarName $1) }
 
 EXPR :: { Expression }
 EXPR : Cons EXPR EXPR       { Cons $2 $3         }
-     | EXPR Dot EXPR        { Cons $1 $3         }
-     | Nil                  { Nil                }
      | VAR                  { Var $1             }
-     | Int                  { intToExp $1 Nil    }
      | OpenBrc EXPR ClosBrc { $2                 }
      | Hd EXPR              { Hd $2              }
      | Tl EXPR              { Tl $2              }
      | EXPR IsEq EXPR       { IsEq $1 $3         }
      | EXPLIST              { listToWhileList $1 }
-     | ATOM                 { $1                 }
+     | VAL                  { $1                 }
 
 ATOM :: { Expression }
 ATOM : AtAsgn    { intToExp  2 Nil }
@@ -135,19 +132,29 @@ VAL :: { Expression }
 VAL : Nil                         { Nil                }
     | OpenAng VAL Dot VAL ClosAng { Cons $2 $4         }
     | Int                         { intToExp $1 Nil    }
-    | OpenBrc VAL ClosBrc         { $2                 }
     | True                        { intToExp 1 Nil     }
     | False                       { intToExp 0 Nil     }
-    | VALLIST                     { listToWhileList $1 }
     | ATOM                        { $1                 }
 
-VALLIST :: { [Expression] }
-VALLIST : OpenSqu ClosSqu         { []      }
-        | OpenSqu VAL RESTVALLIST { $2 : $3 }
+-- LVALs are VALs, but also with lists allowed. They are only used for command
+-- line input, as adding lists to general VALs that occur within EXPs casues
+-- ambiguity.
+LVAL :: { Expression }
+LVAL : Nil                           { Nil                }
+     | OpenAng LVAL Dot LVAL ClosAng { Cons $2 $4         }
+     | Int                           { intToExp $1 Nil    }
+     | True                          { intToExp 1 Nil     }
+     | False                         { intToExp 0 Nil     }
+     | LVALLIST                      { listToWhileList $1 }
+     | ATOM                          { $1                 }
 
-RESTVALLIST :: { [Expression] }
-RESTVALLIST : Comma VAL RESTVALLIST { $2 : $3 }
-            | ClosSqu               { []      }
+LVALLIST :: { [Expression] }
+LVALLIST : OpenSqu ClosSqu           { []      }
+         | OpenSqu LVAL RESTLVALLIST { $2 : $3 }
+
+RESTLVALLIST :: { [Expression] }
+RESTLVALLIST : Comma LVAL RESTLVALLIST { $2 : $3 }
+             | ClosSqu                 { []      }
 {
 parseError :: [Token] -> a
 parseError []           = error "Parse error: reached end of file while parsing"

@@ -12,15 +12,15 @@ import qualified HWhileUtils     as H
 
 loadProg :: FilePath -> IO PS.Program
 loadProg fileName = do
-    fileMap <- H.buildFileMap M.empty (S.singleton fileName)
+    fileMap <- H.buildFileMap "examples" M.empty (S.singleton fileName)
     return $ SS.desugarProg fileMap (fileMap M.! fileName)
 
 addProg, countProg, equalsProg, numberProg, xorProg :: IO PS.Program
-addProg    = loadProg "examples/add.while"
-countProg  = loadProg "examples/count.while"
-equalsProg = loadProg "examples/equals.while"
-numberProg = loadProg "examples/number.while"
-xorProg    = loadProg "examples/xor.while"
+addProg    = loadProg "add"
+countProg  = loadProg "count"
+equalsProg = loadProg "equals"
+numberProg = loadProg "number"
+xorProg    = loadProg "xor"
 
 -- Run a program obtained through IO with the given input, and compare the
 -- output with a given expression
@@ -41,17 +41,17 @@ main :: IO ExitCode
 main = do
     tests <- sequence
         [ test "Test xor program: t, t -> f"
-            (testRun "((nil.nil).(nil.nil))" xorProg "nil"      )
+            (testRun "<<nil.nil>.<nil.nil>>" xorProg "nil"      )
         , test "Test xor program: f, t -> t"
-            (testRun "(nil.(nil.nil))"       xorProg "(nil.nil)")
+            (testRun "<nil.<nil.nil>>"       xorProg "<nil.nil>")
         , test "Test xor program: t, f -> t"
-            (testRun "((nil.nil).nil)"       xorProg "(nil.nil)")
+            (testRun "<<nil.nil>.nil>"       xorProg "<nil.nil>")
         , test "Test xor program: f, f -> f"
-            (testRun "(nil.nil)"             xorProg "nil"      )
+            (testRun "<nil.nil>"             xorProg "nil"      )
         , test "Test add program: 3 + 4 -> 7"
-            (testRun "(3.4)"                 addProg "7"        )
+            (testRun "<3.4>"                 addProg "7"        )
         , test "Test add program: 0 + 0 -> 0"
-            (testRun "(0.0)"                 addProg "0"        )
+            (testRun "<0.0>"                 addProg "0"        )
         ]
     if all snd tests then
         exitSuccess

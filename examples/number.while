@@ -1,5 +1,5 @@
-// Program that takes a while tree and returns 1 if the tree is a natural number,
-// and 0 otherwise
+// Program that takes a while tree and returns 1 if the tree is a natural
+// number, and 0 otherwise
 
 number
 read X {

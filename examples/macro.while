@@ -4,6 +4,6 @@ macro
 read XY {
     X := hd XY;
     Y := tl XY;
-    Z := <add> (X.Y);
-    Z := <add> (X.Z)
+    Z := <add> cons X Y;
+    Z := <add> cons X Z 
 } write Z

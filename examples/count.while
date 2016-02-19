@@ -11,7 +11,7 @@ read LIST {
 
         // Add ELEM to SUM
         while ELEM {
-            SUM := ( nil . SUM );
+            SUM := cons nil SUM;
             ELEM := tl ELEM
         }
     }

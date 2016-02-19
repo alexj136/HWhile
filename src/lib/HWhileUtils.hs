@@ -20,7 +20,7 @@ pathAndTextToExpr :: FilePath -> String -> PS.Expression
 pathAndTextToExpr fp = P.parseExpr . L.scan fp
 
 pathAndTextToVal  :: FilePath -> String -> PS.Expression
-pathAndTextToVal  fp = P.parseVal  . L.scan fp
+pathAndTextToVal  fp = P.parseLVal . L.scan fp
 
 -- Run a program given the file path, and a map from file paths to files that
 -- are in the macro tree for the given file path

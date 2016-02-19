@@ -5,7 +5,7 @@ read XY {
     X := hd XY;
     Y := tl XY;
     while X {
-        Y := ( nil . Y );
+        Y := cons nil Y;
         X := tl X
     }
 } write Y
