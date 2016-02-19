@@ -1,6 +1,7 @@
 // Program that takes a list of numbers and returns the sum of those numbers. If
 // the input is invalid, the output is undefined (may be a number, may not)
 
+count
 read LIST {
     SUM := 0;
     while LIST {

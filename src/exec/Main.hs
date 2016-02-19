@@ -3,6 +3,7 @@ module Main where
 import qualified Data.Map        as M
 import qualified Data.Set        as S
 import System.Environment (getArgs)
+import System.FilePath
 import Data.List (intersperse)
 import qualified Lexer           as L
 import qualified Parser          as P
@@ -60,17 +61,25 @@ main = do
         putStrLn helpMessage
 
     else if (length args) == 2 then do
-        let mainFile = args !! 0
-        let argStr   = args !! 1
-        fileMap <- buildFileMap M.empty (S.singleton mainFile)
-        putStrLn $ show (runFromParts mainFile fileMap argStr)
+        let mainFile         = args !! 0
+        let mainFileDir      = takeDirectory mainFile
+        let mainFileBaseName = takeBaseName mainFile
+        let argStr           = args !! 1
+        fileMap <- buildFileMap mainFileDir M.empty
+                (S.singleton mainFileBaseName)
+        putStrLn $ show
+                (runFromParts mainFileBaseName fileMap argStr)
 
     else if (length args) == 3 then do
         let flagStr  = args !! 0
         let mainFile = args !! 1
+        let mainFileDir      = takeDirectory mainFile
+        let mainFileBaseName = takeBaseName mainFile
         let argStr   = args !! 2
-        fileMap <- buildFileMap M.empty (S.singleton mainFile)
-        putStrLn $ showFlag flagStr (runFromParts mainFile fileMap argStr)
+        fileMap <- buildFileMap mainFileDir M.empty
+                (S.singleton mainFileBaseName)
+        putStrLn $ showFlag flagStr
+                (runFromParts mainFileBaseName fileMap argStr)
 
     else
         putStrLn "Invalid argument(s) supplied. Run 'hwhile -h' for help."

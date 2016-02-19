@@ -2,6 +2,7 @@ module HWhileUtils where
 
 import qualified Data.Map        as M
 import qualified Data.Set        as S
+import System.FilePath
 import qualified Lexer           as L
 import qualified Parser          as P
 import qualified PureSyntax      as PS
@@ -38,22 +39,28 @@ runFromParts mainFile fileMap argStr =
 -- dependencies. Returns results in a map from file paths to the corresponding
 -- programs. These can be passed to SugarSyntax.desugarProg.
 buildFileMap ::
+    FilePath                                   -> -- The search path
     M.Map FilePath (S.Set FilePath, SuProgram) ->
     S.Set FilePath                             ->
     IO (M.Map FilePath SuProgram)
-buildFileMap ingraph tovisit =
+buildFileMap directory ingraph tovisit =
     if S.null tovisit then
         return $ M.map snd ingraph
     else do
-        let curFilePath  = S.findMin tovisit
-        let tovisitRest  = S.deleteMin tovisit
-        curFileText <- readFile curFilePath
-        let curSuProg   = pathAndTextToProg curFilePath curFileText
+        let curFileBaseName = S.findMin tovisit
+        let tovisitRest     = S.deleteMin tovisit
+        curFileText <- readFile (fullPath directory curFileBaseName)
+        let curSuProg   = pathAndTextToProg curFileBaseName curFileText
         let curChildren = macroNamesProg curSuProg
-        let newIngraph  = M.insert curFilePath (curChildren, curSuProg) ingraph
+        let newIngraph  = M.insert curFileBaseName
+                (curChildren, curSuProg) ingraph
         let newTovisit  = S.union tovisitRest curChildren
         if (not . S.null) (S.intersection curChildren (M.keysSet newIngraph))
         then
             error "Recursive macros found. Macros may not be recursive."
         else
-            buildFileMap newIngraph newTovisit
+            buildFileMap directory newIngraph newTovisit
+
+fullPath :: FilePath -> FilePath -> FilePath
+fullPath directory baseName =
+    directory ++ [pathSeparator] ++ baseName ++ ".while"

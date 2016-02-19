@@ -1,4 +1,5 @@
 // Demonstration of conditionals - xor implementation
+xor
 read AB {
     A := hd AB;
     B := tl AB;

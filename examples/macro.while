@@ -1,0 +1,9 @@
+// A simple macro call example. Should yeild 2X + Y.
+
+macro
+read XY {
+    X := hd XY;
+    Y := tl XY;
+    Z := <add> (X.Y);
+    Z := <add> (X.Z)
+} write Z

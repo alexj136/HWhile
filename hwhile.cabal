@@ -20,7 +20,8 @@ library
   hs-source-dirs:       src/lib
   build-depends:        base >=4.8 && <4.9,
                         containers >=0.5 && <0.6,
-                        array >=0.5 && <0.6
+                        array >=0.5 && <0.6,
+                        filepath
   exposed-modules:      Lexer,
                         Parser,
                         SugarSyntax,
@@ -35,6 +36,7 @@ executable hwhile
   build-depends:        base >=4.8 && <4.9,
                         containers >=0.5 && <0.6,
                         array >=0.5 && <0.6,
+                        filepath,
                         hwhile
   build-tools:          alex, happy
   main-is:              Main.hs

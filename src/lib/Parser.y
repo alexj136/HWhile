@@ -28,6 +28,8 @@ import SugarSyntax
     ClosCur   { Token ( _, TkClosCur     , _ ) }
     OpenSqu   { Token ( _, TkOpenSqu     , _ ) }
     ClosSqu   { Token ( _, TkClosSqu     , _ ) }
+    OpenAng   { Token ( _, TkOpenAng     , _ ) }
+    ClosAng   { Token ( _, TkClosAng     , _ ) }
     Comma     { Token ( _, TkComma       , _ ) }
     IsEq      { Token ( _, TkIsEq        , _ ) }
     Assign    { Token ( _, TkAssign      , _ ) }
@@ -45,6 +47,8 @@ import SugarSyntax
     Else      { Token ( _, TkElse        , _ ) }
     Read      { Token ( _, TkRead        , _ ) }
     Write     { Token ( _, TkWrite       , _ ) }
+    True      { Token ( _, TkTrue        , _ ) }
+    False     { Token ( _, TkFalse       , _ ) }
     AtAsgn    { Token ( _, TkAtomAsgn    , _ ) }
     AtDoAsgn  { Token ( _, TkAtomDoAsgn  , _ ) }
     AtWhile   { Token ( _, TkAtomWhile   , _ ) }
@@ -59,17 +63,18 @@ import SugarSyntax
     AtDoTl    { Token ( _, TkAtomDoTl    , _ ) }
     AtCons    { Token ( _, TkAtomCons    , _ ) }
     AtDoCons  { Token ( _, TkAtomDoCons  , _ ) }
-    Var       { Token ( _, ITkVar   _    , _ ) }
-    Int       { Token ( _, ITkInt   $$   , _ ) }
-    Macro     { Token ( _, ITkMacro $$   , _ ) }
+    Var       { Token ( _, ITkVar _      , _ ) }
+    Int       { Token ( _, ITkInt $$     , _ ) }
 
 %%
 
 PROGRAM :: { SuProgram }
-PROGRAM : Read VAR BLOCK Write VAR { SuProgram $2 $3 $5 }
+PROGRAM : VAR Read VAR BLOCK Write VAR {
+              if namePath $1 == nameName $1 then SuProgram $3 $4 $6
+              else error $ "Program name must match the file prefix." }
 
 VAR :: { Name }
-VAR : Var { Name (pathOf $1, varName $1) }
+VAR : Var { Name (tkPath $1, tkVarName $1) }
 
 EXPR :: { Expression }
 EXPR : Cons EXPR EXPR       { Cons $2 $3         }
@@ -85,20 +90,20 @@ EXPR : Cons EXPR EXPR       { Cons $2 $3         }
      | ATOM                 { $1                 }
 
 ATOM :: { Expression }
-ATOM : AtAsgn               { intToExp  2 Nil    }
-     | AtDoAsgn             { intToExp  3 Nil    }
-     | AtWhile              { intToExp  5 Nil    }
-     | AtDoWhile            { intToExp  7 Nil    }
-     | AtIf                 { intToExp 11 Nil    }
-     | AtDoIf               { intToExp 13 Nil    }
-     | AtVar                { intToExp 17 Nil    }
-     | AtQuote              { intToExp 19 Nil    }
-     | AtHd                 { intToExp 23 Nil    }
-     | AtDoHd               { intToExp 29 Nil    }
-     | AtTl                 { intToExp 31 Nil    }
-     | AtDoTl               { intToExp 37 Nil    }
-     | AtCons               { intToExp 41 Nil    }
-     | AtDoCons             { intToExp 43 Nil    }
+ATOM : AtAsgn    { intToExp  2 Nil }
+     | AtDoAsgn  { intToExp  3 Nil }
+     | AtWhile   { intToExp  5 Nil }
+     | AtDoWhile { intToExp  7 Nil }
+     | AtIf      { intToExp 11 Nil }
+     | AtDoIf    { intToExp 13 Nil }
+     | AtVar     { intToExp 17 Nil }
+     | AtQuote   { intToExp 19 Nil }
+     | AtHd      { intToExp 23 Nil }
+     | AtDoHd    { intToExp 29 Nil }
+     | AtTl      { intToExp 31 Nil }
+     | AtDoTl    { intToExp 37 Nil }
+     | AtCons    { intToExp 41 Nil }
+     | AtDoCons  { intToExp 43 Nil }
 
 EXPLIST :: { [Expression] }
 EXPLIST : OpenSqu ClosSqu          { []      }
@@ -109,13 +114,13 @@ RESTEXPLIST : Comma EXPR RESTEXPLIST { $2 : $3 }
             | ClosSqu                { []      }
 
 COMMAND :: { SuCommand }
-COMMAND : COMMAND SemiCo COMMAND         { SuCompos $1 $3                }
-        | VAR Assign EXPR                { SuAssign $1 $3                }
-        | VAR Assign Macro EXPR          { Macro $1 $3 $4                }
-        | While EXPR BLOCK               { SuWhile  $2 $3                }
-        | If EXPR BLOCK Else BLOCK       { SuIfElse $2 $3 $5             }
-        | If EXPR BLOCK                  { SuIfElse $2 $3 skip           }
-        | Switch EXPR OpenCur SWITCHCONT { Switch   $2 (fst $4) (snd $4) }
+COMMAND : COMMAND SemiCo COMMAND              { SuCompos $1 $3              }
+        | VAR Assign EXPR                     { SuAssign $1 $3              }
+        | VAR Assign OpenAng VAR ClosAng EXPR { Macro $1 (nameName $4) $6   }
+        | While EXPR BLOCK                    { SuWhile $2 $3               }
+        | If EXPR BLOCK Else BLOCK            { SuIfElse $2 $3 $5           }
+        | If EXPR BLOCK                       { SuIfElse $2 $3 skip         }
+        | Switch EXPR OpenCur SWITCHCONT      { Switch $2 (fst $4) (snd $4) }
 
 BLOCK :: { SuCommand }
 BLOCK : OpenCur COMMAND ClosCur { $2   }
@@ -126,14 +131,15 @@ SWITCHCONT : Case EXPR Colon COMMAND SWITCHCONT { (($2, $4) : fst $5, snd $5) }
            | ClosCur                            { ([]               , skip  ) }
            | Default Colon COMMAND ClosCur      { ([]               , $3    ) }
 
--- For command line input
 VAL :: { Expression }
-VAL : Nil                 { Nil                }
-    | VAL Dot VAL         { Cons $1 $3         }
-    | Int                 { intToExp $1 Nil    }
-    | OpenBrc VAL ClosBrc { $2                 }
-    | VALLIST             { listToWhileList $1 }
-    | ATOM                { $1                 }
+VAL : Nil                         { Nil                }
+    | OpenAng VAL Dot VAL ClosAng { Cons $2 $4         }
+    | Int                         { intToExp $1 Nil    }
+    | OpenBrc VAL ClosBrc         { $2                 }
+    | True                        { intToExp 1 Nil     }
+    | False                       { intToExp 0 Nil     }
+    | VALLIST                     { listToWhileList $1 }
+    | ATOM                        { $1                 }
 
 VALLIST :: { [Expression] }
 VALLIST : OpenSqu ClosSqu         { []      }
@@ -149,9 +155,9 @@ parseError (tok : rest) = error $ concat
     [ "Parse error: "
     , (prettyPrintToken tok)
     , " at line "
-    , (show (lineNo tok))
+    , (show (tkLineNo tok))
     , ", char "
-    , (show (charNo tok))
+    , (show (tkCharNo tok))
     ]
 
 -- Makes an Expression from an Int, using accumulating parameter style

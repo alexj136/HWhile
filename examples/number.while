@@ -1,6 +1,7 @@
 // Program that takes a while tree and returns 1 if the tree is a natural number,
 // and 0 otherwise
 
+number
 read X {
     RESULT := 1;
     while X {

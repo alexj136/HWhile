@@ -1,5 +1,6 @@
 // A simple addition program
 
+add
 read XY {
     X := hd XY;
     Y := tl XY;

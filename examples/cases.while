@@ -1,6 +1,7 @@
 // An example of switch grammar. If the input is 0, 1, or 2, then the output is
 // the same as the input. Otherwise, the output is 3.
 
+cases
 read X {
     switch X {
         case nil         : Y:= 0

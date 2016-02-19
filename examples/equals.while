@@ -3,6 +3,7 @@
  * It does not use the ?= operator.
  *)
 
+equals
 read XY {
 
     // Initally assume that the input is invalid (i.e. nil)

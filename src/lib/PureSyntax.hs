@@ -8,6 +8,12 @@ import qualified Data.Map as M
 
 newtype Name = Name (FilePath, String) deriving (Eq, Ord)
 
+nameName :: Name -> String
+nameName (Name (_, s)) = s
+
+namePath :: Name -> FilePath
+namePath (Name (f, _)) = f
+
 data Program
     = Program Name Command Name
     deriving (Eq, Ord)

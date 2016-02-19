@@ -2,10 +2,10 @@
 module Lexer
     ( Token (..)
     , TokenType (..)
-    , lineNo
-    , charNo
-    , pathOf
-    , varName
+    , tkLineNo
+    , tkCharNo
+    , tkPath
+    , tkVarName
     , scan
     , prettyPrintToken
     ) where
@@ -18,7 +18,8 @@ $lower = a-z
 $upper = A-Z
 $alpha = [$lower $upper]
 $alnum = [$alpha $digit]
-$inmac = [$alpha \. \\ \/ \_]
+$inmac = [$alpha \_ \$]
+$invar = [$inmac $digit]
 
 tokens :-
     $white+               ; -- Ignore whitespace
@@ -31,6 +32,8 @@ tokens :-
     \}                    { \p s -> NearlyTok ( TkClosCur                , p ) }
     \[                    { \p s -> NearlyTok ( TkOpenSqu                , p ) }
     \]                    { \p s -> NearlyTok ( TkClosSqu                , p ) }
+    \<                    { \p s -> NearlyTok ( TkOpenAng                , p ) }
+    \>                    { \p s -> NearlyTok ( TkClosAng                , p ) }
     \,                    { \p s -> NearlyTok ( TkComma                  , p ) }
     \:\=                  { \p s -> NearlyTok ( TkAssign                 , p ) }
     \:                    { \p s -> NearlyTok ( TkColon                  , p ) }
@@ -48,6 +51,9 @@ tokens :-
     "else"                { \p s -> NearlyTok ( TkElse                   , p ) }
     "read"                { \p s -> NearlyTok ( TkRead                   , p ) }
     "write"               { \p s -> NearlyTok ( TkWrite                  , p ) }
+    "true"                { \p s -> NearlyTok ( TkTrue                   , p ) }
+    "false"               { \p s -> NearlyTok ( TkFalse                  , p ) }
+    "@:="                 { \p s -> NearlyTok ( TkAtomAsgn               , p ) }
     "@asgn"               { \p s -> NearlyTok ( TkAtomAsgn               , p ) }
     "@doAsgn"             { \p s -> NearlyTok ( TkAtomDoAsgn             , p ) }
     "@while"              { \p s -> NearlyTok ( TkAtomWhile              , p ) }
@@ -62,10 +68,9 @@ tokens :-
     "@doTl"               { \p s -> NearlyTok ( TkAtomDoTl               , p ) }
     "@cons"               { \p s -> NearlyTok ( TkAtomCons               , p ) }
     "@doCons"             { \p s -> NearlyTok ( TkAtomDoCons             , p ) }
-    $alpha[$alnum \_ \']* { \p s -> NearlyTok ( ITkVar s                 , p ) }
+    $alpha[$invar]*       { \p s -> NearlyTok ( ITkVar s                 , p ) }
     "0"                   { \p s -> NearlyTok ( ITkInt (read s)          , p ) }
     [1-9][$digit]*        { \p s -> NearlyTok ( ITkInt (read s)          , p ) }
-    \<[$inmac]*\>         { \p s -> NearlyTok ( ITkMacro (init (tail s)) , p ) }
 
 {
 
@@ -81,6 +86,8 @@ data TokenType
     | TkClosCur
     | TkOpenSqu
     | TkClosSqu
+    | TkOpenAng
+    | TkClosAng
     | TkComma
     | TkColon
     | TkIsEq
@@ -98,6 +105,8 @@ data TokenType
     | TkElse
     | TkRead
     | TkWrite
+    | TkTrue
+    | TkFalse
     | TkAtomAsgn
     | TkAtomDoAsgn
     | TkAtomWhile
@@ -112,9 +121,8 @@ data TokenType
     | TkAtomDoTl
     | TkAtomCons
     | TkAtomDoCons
-    | ITkVar   String
-    | ITkInt   Int
-    | ITkMacro FilePath
+    | ITkVar String
+    | ITkInt Int
     deriving (Show, Eq)
 
 -- Main scanning function. Wraps makeGVars and alexScanTokens.
@@ -128,22 +136,22 @@ instance Eq Token where
 
 -- Get the number of lines into the file that the text produced this token
 -- occurred
-lineNo :: Token -> Int
-lineNo tok = case tok of Token (_, _, (AlexPn _ line char)) -> line
+tkLineNo :: Token -> Int
+tkLineNo tok = case tok of Token (_, _, (AlexPn _ line char)) -> line
 
 -- Get the number of characters into the line that the text that produced this
 -- token occurred
-charNo :: Token -> Int
-charNo tok = case tok of Token (_, _, (AlexPn _ line char)) -> char
+tkCharNo :: Token -> Int
+tkCharNo tok = case tok of Token (_, _, (AlexPn _ line char)) -> char
 
 -- Get the file path that a token came from
-pathOf :: Token -> FilePath
-pathOf (Token (fp, _, _)) = fp
+tkPath :: Token -> FilePath
+tkPath (Token (fp, _, _)) = fp
 
 -- get the variable name in an ITkVar token. Fails if the token isn't an ITkVar.
-varName :: Token -> String
-varName (Token (_, ITkVar s, _)) = s
-varName _                        = error "Not an ITkVar token"
+tkVarName :: Token -> String
+tkVarName (Token (_, ITkVar s, _)) = s
+tkVarName _                        = error "Not an ITkVar token"
 
 -- Complete NearlyTokens into Tokens by adding FilePath info
 completeToken :: FilePath -> NearlyTok -> Token
@@ -159,6 +167,8 @@ prettyPrintToken t = case t of
     Token (_, TkClosCur     , _) -> "'}'"
     Token (_, TkOpenSqu     , _) -> "'['"
     Token (_, TkClosSqu     , _) -> "']'"
+    Token (_, TkOpenAng     , _) -> "'<'"
+    Token (_, TkClosAng     , _) -> "'>'"
     Token (_, TkComma       , _) -> "','"
     Token (_, TkIsEq        , _) -> "'='"
     Token (_, TkAssign      , _) -> "':='"
@@ -172,6 +182,8 @@ prettyPrintToken t = case t of
     Token (_, TkElse        , _) -> "'else'"
     Token (_, TkRead        , _) -> "'read'"
     Token (_, TkWrite       , _) -> "'write'" 
+    Token (_, TkTrue        , _) -> "'true'" 
+    Token (_, TkFalse       , _) -> "'false'" 
     Token (_, TkAtomAsgn    , _) -> "'@asgn'"
     Token (_, TkAtomDoAsgn  , _) -> "'@do_asgn'"
     Token (_, TkAtomWhile   , _) -> "'@while'"
@@ -188,5 +200,4 @@ prettyPrintToken t = case t of
     Token (_, TkAtomDoCons  , _) -> "'@do_cons'"
     Token (_, ITkVar   s    , _) -> "variable  '" ++ s ++ "'"
     Token (_, ITkInt   i    , _) -> "integer  '" ++ show i ++ "'"
-    Token (_, ITkMacro f    , _) -> "macro <" ++ f ++ ">"
 }
