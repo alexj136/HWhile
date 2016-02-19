@@ -16,9 +16,9 @@ type Store = M.Map Name ETree
 -- To evaluate a program, we evaluate the program's command with the initial
 -- store that contains the read variable with the value of the input, and
 -- output (or 'write') the value of the write-variable in the resulting store.
-evalProg :: Expression -> Program -> ETree
+evalProg :: ETree -> Program -> ETree
 evalProg input (Program rd comm wrt) = M.findWithDefault ENil wrt store
-    where store = evalComm (evalComm M.empty (Assign rd input)) comm
+    where store = evalComm (M.singleton rd input) comm
 
 -- Commands update the contents of the store:
 --   Assignments update the assignee variable with the assigned value.
@@ -47,9 +47,9 @@ evalComm store (IfElse e a b) = case evalExpr store e of
 -- for more detail. This function performs a single reduction step.
 evalExpr :: Store -> Expression -> ETree
 evalExpr store expr = let eval = evalExpr store in case expr of
-    Var n    -> M.findWithDefault ENil n store
-    Hd  e    -> case eval e of { ENil -> ENil; ECons h _ -> h}
-    Tl  e    -> case eval e of { ENil -> ENil; ECons _ t -> t}
+    Var  n   -> M.findWithDefault ENil n store
+    Hd   e   -> case eval e of { ENil -> ENil; ECons h _ -> h}
+    Tl   e   -> case eval e of { ENil -> ENil; ECons _ t -> t}
     IsEq a b -> if eval a == eval b then ECons ENil ENil else ENil
     Cons h t -> ECons (eval h) (eval t)
-    Nil      -> ENil
+    Lit  t   -> t

@@ -25,12 +25,12 @@ xorProg    = loadProg "xor"
 -- Run a program obtained through IO with the given input, and compare the
 -- output with a given expression
 testRun :: String -> IO PS.Program -> String -> IO Bool
-testRun argString ioProg expectedResultString = do
+testRun argumentString ioProg expectedResultString = do
     prog <- ioProg
-    return (I.evalProg argExpr prog == I.evalExpr M.empty expRes)
+    return (I.evalProg argumentExpr prog == expectedRes)
     where
-        argExpr = P.parseExpr (L.scan "+TEST+" argString)
-        expRes  = P.parseExpr (L.scan "+TEST+" expectedResultString)
+        argumentExpr = P.parseLVal (L.scan "+TEST+" argumentString)
+        expectedRes  = P.parseLVal (L.scan "+TEST+" expectedResultString)
 
 test :: String -> IO Bool -> IO (String, Bool)
 test desc ioRes = do

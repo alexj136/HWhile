@@ -29,7 +29,7 @@ cons      = Pure.Cons
 var       = Pure.Var
 hd        = Pure.Hd
 tl        = Pure.Tl
-nil       = Pure.Nil
+nil       = Pure.Lit Pure.ENil
 iseq      = Pure.IsEq
 
 -- The sugared command syntax - has conditionals, macros and switches in

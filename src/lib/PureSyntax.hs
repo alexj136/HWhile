@@ -27,12 +27,15 @@ data Command
 
 data Expression
     = Var  Name  
-    | Nil
+    | Lit  ETree
     | Cons Expression Expression
     | Hd   Expression
     | Tl   Expression
     | IsEq Expression Expression
     deriving (Eq, Ord)
+
+-- ETrees are evaluated expressions - just cons and nil.
+data ETree = ECons ETree ETree | ENil deriving (Eq, Ord)
 
 instance Show Name where
     show (Name (fp, x)) = "<<" ++ x ++ " of " ++ fp ++ ">>"
@@ -62,14 +65,11 @@ tabs x | x <  0 = error "negative tabs"
 
 instance Show Expression where
     show (Var  s  ) = show s
-    show (Nil     ) = "nil"
+    show (Lit  t  ) = show t
     show (Cons a b) = "(cons " ++ show a ++ " " ++ show b ++ ")"
     show (Hd   x  ) = "hd " ++ show x
     show (Tl   x  ) = "tl " ++ show x
     show (IsEq a b) = show a ++ " = " ++ show b
-
--- ETrees are evaluated expressions - just cons and nil.
-data ETree = ECons ETree ETree | ENil deriving (Eq, Ord)
 
 instance Show ETree where
     show  ENil       = "nil"

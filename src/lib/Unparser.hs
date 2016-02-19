@@ -27,7 +27,7 @@ varMapComm vm comm = case comm of
 varMapExpr :: VarMap -> Expression -> VarMap
 varMapExpr vm expr = case expr of
     Var  s   -> varMapName vm s
-    Nil      -> vm
+    Lit  _   -> vm
     Cons a b -> varMapExpr (varMapExpr vm a) b
     Hd   x   -> varMapExpr vm x
     Tl   x   -> varMapExpr vm x

@@ -77,30 +77,30 @@ VAR :: { Name }
 VAR : Var { Name (tkPath $1, tkVarName $1) }
 
 EXPR :: { Expression }
-EXPR : Cons EXPR EXPR       { Cons $2 $3         }
-     | VAR                  { Var $1             }
-     | OpenBrc EXPR ClosBrc { $2                 }
-     | Hd EXPR              { Hd $2              }
-     | Tl EXPR              { Tl $2              }
-     | EXPR IsEq EXPR       { IsEq $1 $3         }
-     | EXPLIST              { listToWhileList $1 }
-     | VAL                  { $1                 }
+EXPR : Cons EXPR EXPR       { Cons $2 $3            }
+     | VAR                  { Var $1                }
+     | OpenBrc EXPR ClosBrc { $2                    }
+     | Hd EXPR              { Hd $2                 }
+     | Tl EXPR              { Tl $2                 }
+     | EXPR IsEq EXPR       { IsEq $1 $3            }
+     | EXPLIST              { expListToWhileList $1 }
+     | VAL                  { Lit $1                }
 
-ATOM :: { Expression }
-ATOM : AtAsgn    { intToExp  2 Nil }
-     | AtDoAsgn  { intToExp  3 Nil }
-     | AtWhile   { intToExp  5 Nil }
-     | AtDoWhile { intToExp  7 Nil }
-     | AtIf      { intToExp 11 Nil }
-     | AtDoIf    { intToExp 13 Nil }
-     | AtVar     { intToExp 17 Nil }
-     | AtQuote   { intToExp 19 Nil }
-     | AtHd      { intToExp 23 Nil }
-     | AtDoHd    { intToExp 29 Nil }
-     | AtTl      { intToExp 31 Nil }
-     | AtDoTl    { intToExp 37 Nil }
-     | AtCons    { intToExp 41 Nil }
-     | AtDoCons  { intToExp 43 Nil }
+ATOM :: { ETree }
+ATOM : AtAsgn    { intToExp  2 ENil }
+     | AtDoAsgn  { intToExp  3 ENil }
+     | AtWhile   { intToExp  5 ENil }
+     | AtDoWhile { intToExp  7 ENil }
+     | AtIf      { intToExp 11 ENil }
+     | AtDoIf    { intToExp 13 ENil }
+     | AtVar     { intToExp 17 ENil }
+     | AtQuote   { intToExp 19 ENil }
+     | AtHd      { intToExp 23 ENil }
+     | AtDoHd    { intToExp 29 ENil }
+     | AtTl      { intToExp 31 ENil }
+     | AtDoTl    { intToExp 37 ENil }
+     | AtCons    { intToExp 41 ENil }
+     | AtDoCons  { intToExp 43 ENil }
 
 EXPLIST :: { [Expression] }
 EXPLIST : OpenSqu ClosSqu          { []      }
@@ -128,31 +128,31 @@ SWITCHCONT : Case EXPR Colon COMMAND SWITCHCONT { (($2, $4) : fst $5, snd $5) }
            | ClosCur                            { ([]               , skip  ) }
            | Default Colon COMMAND ClosCur      { ([]               , $3    ) }
 
-VAL :: { Expression }
-VAL : Nil                         { Nil                }
-    | OpenAng VAL Dot VAL ClosAng { Cons $2 $4         }
-    | Int                         { intToExp $1 Nil    }
-    | True                        { intToExp 1 Nil     }
-    | False                       { intToExp 0 Nil     }
-    | ATOM                        { $1                 }
+VAL :: { ETree }
+VAL : Nil                         { ENil             }
+    | OpenAng VAL Dot VAL ClosAng { ECons $2 $4      }
+    | Int                         { intToExp $1 ENil }
+    | True                        { intToExp 1 ENil  }
+    | False                       { intToExp 0 ENil  }
+    | ATOM                        { $1               }
 
 -- LVALs are VALs, but also with lists allowed. They are only used for command
 -- line input, as adding lists to general VALs that occur within EXPs casues
 -- ambiguity.
-LVAL :: { Expression }
-LVAL : Nil                           { Nil                }
-     | OpenAng LVAL Dot LVAL ClosAng { Cons $2 $4         }
-     | Int                           { intToExp $1 Nil    }
-     | True                          { intToExp 1 Nil     }
-     | False                         { intToExp 0 Nil     }
-     | LVALLIST                      { listToWhileList $1 }
-     | ATOM                          { $1                 }
+LVAL :: { ETree }
+LVAL : Nil                           { ENil                  }
+     | OpenAng LVAL Dot LVAL ClosAng { ECons $2 $4           }
+     | Int                           { intToExp $1 ENil      }
+     | True                          { intToExp 1 ENil       }
+     | False                         { intToExp 0 ENil       }
+     | LVALLIST                      { litListToWhileList $1 }
+     | ATOM                          { $1                    }
 
-LVALLIST :: { [Expression] }
+LVALLIST :: { [ETree] }
 LVALLIST : OpenSqu ClosSqu           { []      }
          | OpenSqu LVAL RESTLVALLIST { $2 : $3 }
 
-RESTLVALLIST :: { [Expression] }
+RESTLVALLIST :: { [ETree] }
 RESTLVALLIST : Comma LVAL RESTLVALLIST { $2 : $3 }
              | ClosSqu                 { []      }
 {
@@ -168,14 +168,19 @@ parseError (tok : rest) = error $ concat
     ]
 
 -- Makes an Expression from an Int, using accumulating parameter style
-intToExp :: Int -> Expression -> Expression
+intToExp :: Int -> ETree -> ETree
 intToExp 0 acc = acc
-intToExp n acc = intToExp (n - 1) (Cons Nil acc)
+intToExp n acc = intToExp (n - 1) (ECons ENil acc)
 
 -- Convert a parsed list of Expressions into an actual while list
-listToWhileList :: [Expression] -> Expression
-listToWhileList (h:t) = Cons h (listToWhileList t)
-listToWhileList []    = Nil
+expListToWhileList :: [Expression] -> Expression
+expListToWhileList (h:t) = Cons h (expListToWhileList t)
+expListToWhileList []    = Lit ENil
+
+-- Convert a parsed list of ETrees into an actual while list
+litListToWhileList :: [ETree] -> ETree
+litListToWhileList (h:t) = ECons h (litListToWhileList t)
+litListToWhileList []    = ENil
 
 -- A command that does nothing (simplifies ifs without elses and switches
 -- without defaults

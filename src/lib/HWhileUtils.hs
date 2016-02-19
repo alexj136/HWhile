@@ -19,7 +19,7 @@ pathAndTextToComm fp = P.parseComm . L.scan fp
 pathAndTextToExpr :: FilePath -> String -> PS.Expression
 pathAndTextToExpr fp = P.parseExpr . L.scan fp
 
-pathAndTextToVal  :: FilePath -> String -> PS.Expression
+pathAndTextToVal  :: FilePath -> String -> PS.ETree
 pathAndTextToVal  fp = P.parseLVal . L.scan fp
 
 -- Run a program given the file path, and a map from file paths to files that
