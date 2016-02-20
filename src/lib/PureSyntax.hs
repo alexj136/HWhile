@@ -1,6 +1,7 @@
 module PureSyntax where
 
 import qualified Data.Map as M
+import Data.List (intersperse)
 
 -- Syntax definitions for while programs. The data types below match the
 -- context-free grammar in Neil Jones' book, page 32. This module also contains
@@ -83,6 +84,16 @@ showIntTree isVerbose e = case parseInt e of
     Just i              -> show i
     Nothing | isVerbose -> show e
     Nothing | otherwise -> "E"
+
+showIntListTree :: Bool -> ETree -> String
+showIntListTree isVerbose e =
+    let list      = toHaskellList e
+        tryParses = map (\i -> (parseInt i, i)) list
+        strings   = (\x f -> f x) tryParses $ map $ \p -> case p of
+            (Just n , _)             -> show n
+            (Nothing, t) | isVerbose -> show t
+            (Nothing, _) | otherwise -> "E"
+    in "[" ++ ((concat . intersperse ", ") strings) ++ "]"
 
 -- Parse an Int from a while Expression. Not all while expressions encode
 -- integers, so return a value in the Maybe monad.

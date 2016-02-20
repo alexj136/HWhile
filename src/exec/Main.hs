@@ -47,8 +47,8 @@ showFlag f tree = case f of
         Just i  -> show i
         Nothing -> show tree
     "-l"   -> show (PS.toHaskellList tree)
-    "-li"  -> show (map (PS.showIntTree False) (PS.toHaskellList tree))
-    "-liv" -> show (map (PS.showIntTree True ) (PS.toHaskellList tree))
+    "-li"  -> PS.showIntListTree False tree
+    "-liv" -> PS.showIntListTree True  tree
     _      -> "Invalid argument(s) supplied. Run 'hwhile -h' for help."
 
 main = do
