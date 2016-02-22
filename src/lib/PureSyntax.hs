@@ -85,26 +85,35 @@ instance Show ETree where
 -- isVerbose argument is True, unparsable expressions will be displayed in full.
 -- If it is False, unparsable expressions yield "E".
 showIntTree :: Bool -> ETree -> String
-showIntTree isVerbose e = case parseInt e of
-    Just i              -> show i
-    Nothing | isVerbose -> show e
-    Nothing | otherwise -> "E"
+showIntTree isVerbose e =
+    maybe (if isVerbose then show e else "E") show (parseInt e)
 
 showIntListTree :: Bool -> ETree -> String
 showIntListTree isVerbose e =
-    let list      = toHaskellList e
-        tryParses = map (\i -> (parseInt i, i)) list
-        strings   = (\x f -> f x) tryParses $ map $ \p -> case p of
-            (Just n , _)             -> show n
-            (Nothing, t) | isVerbose -> show t
-            (Nothing, _) | otherwise -> "E"
-    in "[" ++ ((concat . intersperse ", ") strings) ++ "]"
+    showListOf (showIntTree isVerbose) (toHaskellList e)
 
 showNestedIntListTree :: ETree -> String
-showNestedIntListTree e = case parseInt e of
-    Just i  -> show i
-    Nothing -> let nextLevel = map showNestedIntListTree (toHaskellList e) in
-        "[" ++ ((concat . intersperse ", ") nextLevel) ++ "]"
+showNestedIntListTree e = maybe
+    (showListOf showNestedIntListTree (toHaskellList e)) show (parseInt e)
+
+showNestedAtomIntListTree :: ETree -> String
+showNestedAtomIntListTree e = case parseInt e of
+    Just  2 -> "@asgn"
+    Just  3 -> "@doAsgn"
+    Just  5 -> "@while"
+    Just  7 -> "@doWhile"
+    Just 11 -> "@if"
+    Just 13 -> "@doIf"
+    Just 17 -> "@var"
+    Just 19 -> "@quote"
+    Just 23 -> "@hd"
+    Just 29 -> "@doHd"
+    Just 31 -> "@tl"
+    Just 37 -> "@doTl"
+    Just 41 -> "@cons"
+    Just 43 -> "@doCons"
+    Just  i -> show i
+    Nothing -> showListOf showNestedAtomIntListTree (toHaskellList e)
 
 -- Parse an Int from a while Expression. Not all while expressions encode
 -- integers, so return a value in the Maybe monad.
@@ -124,3 +133,7 @@ toHaskellList = reverse . (toHaskellListAcc [])
     toHaskellListAcc acc exp = case exp of
         ENil              -> acc
         (ECons elem rest) -> toHaskellListAcc (elem : acc) rest
+
+-- given a function to show an ETree and a list 
+showListOf :: (ETree -> String) -> [ETree] -> String
+showListOf showFn l = "[" ++ (concat $ intersperse ", " $ (map showFn l)) ++ "]"
