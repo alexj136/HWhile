@@ -111,22 +111,25 @@ RESTEXPLIST : Comma EXPR RESTEXPLIST { $2 : $3 }
             | ClosSqu                { []      }
 
 COMMAND :: { SuCommand }
-COMMAND : COMMAND SemiCo COMMAND              { SuCompos $1 $3              }
-        | VAR Assign EXPR                     { SuAssign $1 $3              }
+COMMAND : VAR Assign EXPR                     { SuAssign $1 $3              }
         | VAR Assign OpenAng VAR ClosAng EXPR { Macro $1 (nameName $4) $6   }
         | While EXPR BLOCK                    { SuWhile $2 $3               }
         | If EXPR BLOCK Else BLOCK            { SuIfElse $2 $3 $5           }
-        | If EXPR BLOCK                       { SuIfElse $2 $3 skip         }
+        | If EXPR BLOCK                       { SuIfElse $2 $3 []           }
         | Switch EXPR OpenCur SWITCHCONT      { Switch $2 (fst $4) (snd $4) }
 
-BLOCK :: { SuCommand }
-BLOCK : OpenCur COMMAND ClosCur { $2   }
-      | OpenCur         ClosCur { skip }
+BLOCK :: { SuBlock }
+BLOCK : OpenCur      ClosCur { [] }
+      | OpenCur CMDS ClosCur { $2 }
 
-SWITCHCONT :: { ([(Expression, SuCommand)], SuCommand) }
-SWITCHCONT : Case EXPR Colon COMMAND SWITCHCONT { (($2, $4) : fst $5, snd $5) }
-           | ClosCur                            { ([]               , skip  ) }
-           | Default Colon COMMAND ClosCur      { ([]               , $3    ) }
+CMDS :: { SuBlock }
+CMDS : COMMAND SemiCo CMDS { $1 : $3 }
+     | COMMAND             { [$1]    }
+
+SWITCHCONT :: { ([(Expression, SuBlock)], SuBlock) }
+SWITCHCONT : Case EXPR Colon CMDS SWITCHCONT { (($2, $4) : fst $5, snd $5) }
+           | ClosCur                         { ([]               , []    ) }
+           | Default Colon CMDS ClosCur      { ([]               , $3    ) }
 
 VAL :: { ETree }
 VAL : Nil                         { ENil             }
@@ -181,9 +184,4 @@ expListToWhileList []    = Lit ENil
 litListToWhileList :: [ETree] -> ETree
 litListToWhileList (h:t) = ECons h (litListToWhileList t)
 litListToWhileList []    = ENil
-
--- A command that does nothing (simplifies ifs without elses and switches
--- without defaults
-skip :: SuCommand
-skip = SuAssign (Name ("+IMPL+", "+SKIP+")) (Var (Name ("+IMPL+", "+SKIP+")))
 }

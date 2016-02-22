@@ -17,8 +17,15 @@ type Store = M.Map Name ETree
 -- store that contains the read variable with the value of the input, and
 -- output (or 'write') the value of the write-variable in the resulting store.
 evalProg :: ETree -> Program -> ETree
-evalProg input (Program rd comm wrt) = M.findWithDefault ENil wrt store
-    where store = evalComm (M.singleton rd input) comm
+evalProg input (Program rd blk wrt) = M.findWithDefault ENil wrt store
+    where store = evalBlock (M.singleton rd input) blk
+
+-- To evaluate an empty block, just return the input store. To evaluate a non-
+-- empty block, evaluate the first element with the input store, and then
+-- evaluate the rest of the block with the resulting store.
+evalBlock :: Store -> Block -> Store
+evalBlock store []     = store
+evalBlock store (c:cs) = let store' = evalComm store c in evalBlock store' cs
 
 -- Commands update the contents of the store:
 --   Assignments update the assignee variable with the assigned value.
@@ -26,22 +33,17 @@ evalProg input (Program rd comm wrt) = M.findWithDefault ENil wrt store
 --     resulting expression is nil, we do nothing. Otherwise, we update the
 --     store by executing the while loop's command, and repeat the process with
 --     the new store.
---   Sequential Composition is evaluated by first evaluating command one with an
---     initial store, and then evaluating command two with the resulting store.
 --   Conditionals are evaluated by first evaluating the condition. If the
 --     condition is false (nil), the 'else-block' is evaluated. Otherwise the
 --     'then-block' is evaluated.
 evalComm :: Store -> Command -> Store
-evalComm store (Compos a b)   = evalComm store' b
-    where store' = evalComm store a
 evalComm store (Assign v x)   = M.insert v (evalExpr store x) store
-evalComm store (While  x c)   = case evalExpr store x of
+evalComm store (While  x b)   = case evalExpr store x of
     ENil -> store
-    _    -> evalComm store' (While x c)
-        where store' = evalComm store c
+    _    -> let store' = evalBlock store b in evalComm store' (While x b)
 evalComm store (IfElse e a b) = case evalExpr store e of
-    ENil -> evalComm store b
-    _    -> evalComm store a
+    ENil -> evalBlock store b
+    _    -> evalBlock store a
 
 -- Expression evaluation is straightforward - see page 40 of Neil Jones' book
 -- for more detail. This function performs a single reduction step.

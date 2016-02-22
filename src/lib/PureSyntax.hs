@@ -16,14 +16,15 @@ namePath :: Name -> FilePath
 namePath (Name (f, _)) = f
 
 data Program
-    = Program Name Command Name
+    = Program Name Block Name
     deriving (Eq, Ord)
 
+type Block = [Command]
+
 data Command
-    = Compos Command    Command
-    | Assign Name       Expression
-    | While  Expression Command
-    | IfElse Expression Command Command
+    = Assign Name       Expression
+    | While  Expression Block
+    | IfElse Expression Block Block
     deriving (Eq, Ord)
 
 data Expression
@@ -49,15 +50,19 @@ instance Show Program where
 instance Show Command where
     show c = showC 0 c
 
+showBlock :: Int -> Block -> String
+showBlock i [] = "{}"
+showBlock i l  = (tabs i) ++ "{\n"
+              ++ (concat $ intersperse ";\n" $ map (showC (i + 1)) l)
+              ++ "\n"
+              ++ (tabs i) ++ "}\n"
+
 showC :: Int -> Command -> String
-showC i (While  x c)   = (tabs i) ++ "while " ++ show x ++ " {\n"
-                      ++ showC (i + 1) c ++ "\n"
-                      ++ (tabs i) ++ "}"
-showC i (Assign v x)   = (tabs i) ++ (show v) ++ " := " ++ show x
-showC i (Compos a b)   = (showC i a) ++ ";\n"
-                      ++ (showC i b)
-showC i (IfElse e a b) = (tabs i) ++ "if " ++ show e ++ " { " ++ show a
-                      ++ " } else { " ++ show b ++ " }"
+showC i comm = tabs i ++ case comm of
+    While  x b     -> "while " ++ show x ++ showBlock (i + 1) b
+    Assign v x     -> (show v) ++ " := " ++ show x
+    IfElse e bt bf -> "if " ++ show e ++ " " ++ showBlock (i + 1) bt
+                   ++ (tabs i) ++ "else " ++ showBlock (i + 1) bf
 
 tabs :: Int -> String
 tabs x | x <  0 = error "negative tabs"
