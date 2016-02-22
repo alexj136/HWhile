@@ -27,6 +27,7 @@ library
                         SugarSyntax,
                         PureSyntax,
                         PureInterpreter,
+                        LoggingInterpreter,
                         Unparser,
                         HWhileUtils
 

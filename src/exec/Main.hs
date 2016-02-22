@@ -1,18 +1,24 @@
 module Main where
 
-import qualified Data.Map        as M
-import qualified Data.Set        as S
+import qualified Data.Map           as M
+import qualified Data.Set           as S
 import System.Environment (getArgs)
 import System.FilePath
 import Data.List (intersperse)
-import qualified Lexer           as L
-import qualified Parser          as P
-import qualified PureSyntax      as PS
+import qualified PureSyntax         as PS
 import SugarSyntax
-import qualified PureInterpreter as I
-import qualified Unparser        as U
+import qualified PureInterpreter    as I
+import qualified LoggingInterpreter as LI
+import qualified Unparser           as U
 import HWhileUtils
 
+noArgsMessage :: String
+noArgsMessage = "No arguments supplied. Run 'hwhile -h' for help."
+
+badArgsMessage :: String
+badArgsMessage = "Invalid argument(s) supplied. Run 'hwhile -h' for help."
+
+helpMessage :: String
 helpMessage = concat $ (intersperse "\n") $
     [ "HWhile: a Haskell implementation of the while language, by Alex Jeffery."
     , "Usage:"
@@ -24,62 +30,77 @@ helpMessage = concat $ (intersperse "\n") $
     , "                                   the format specified by the chosen"
     , "                                   <FLAG>."
     , "Possible flags:"
-    , "    [NOTHING] - Display output as a while tree"
+    , "    [NOTHING] - Display output as a while tree."
     , "    -i        - Display output as an integer. If the output is not a"
-    , "                valid integer, 'E' will be displayed"
+    , "                valid integer, 'E' will be displayed."
     , "    -iv       - Display output as an integer. If the output is not a"
-    , "                valid integer, it will be displayed as a while tree"
-    , "    -l        - Display output as a list of while trees"
+    , "                valid integer, it will be displayed as a while tree."
+    , "    -l        - Display output as a list of while trees."
     , "    -li       - Display output as a list of integers. Invalid elements"
-    , "                will all display as 'E'"
+    , "                will all display as 'E'."
     , "    -liv      - Display output as a list of integers. Invalid elements"
-    , "                will all display as while trees"
+    , "                will all display as while trees."
+    , "    -d        - Display outputs as while trees, with debugging log"
+    , "    -di       - Display outputs as integers, with debugging log. If"
+    , "                outputs are not valid integers, 'E' will be displayed."
+    , "    -div      - Display outputs as integers. If outputs are not valid"
+    , "                integers, they will display as while trees."
+    , "    -dl       - Display outputs as lists of while trees, with debugging"
+    , "                log."
+    , "    -dli      - Display outputs as lists of integers, with debugging"
+    , "                log. Invalid elements will display as 'E'."
+    , "    -dliv     - Display outputs as lists of integers, with debugging"
+    , "                log. Invalid elements will display as while trees."
     ]
 
--- Print an expression in a certain way according to the given command line
--- argument (see Main.hs for a description of what these should do)
-showFlag :: String -> PS.ETree -> String
-showFlag f tree = case f of
-    "-i"   -> case PS.parseInt tree of
-        Just i  -> show i
-        Nothing -> "E"
-    "-iv"  -> case PS.parseInt tree of
-        Just i  -> show i
-        Nothing -> show tree
-    "-l"   -> show (PS.toHaskellList tree)
-    "-li"  -> PS.showIntListTree False tree
-    "-liv" -> PS.showIntListTree True  tree
-    _      -> "Invalid argument(s) supplied. Run 'hwhile -h' for help."
+-- Compute a function to display an expression in a certain way according to the
+-- given command line argument.
+getShowFunctionAndInterpreterFunction ::
+    Maybe String ->
+    Maybe (PS.ETree -> String, PS.ETree -> PS.Program -> IO PS.ETree)
+getShowFunctionAndInterpreterFunction flagStr = case flagStr of
+    Nothing      -> Just (show                                               , \t p -> return (I.evalProg t p))
+    Just "-i"    -> Just (\tree -> maybe "E" show $ PS.parseInt tree         , \t p -> return (I.evalProg t p))
+    Just "-iv"   -> Just (\tree -> maybe (show tree) show $ PS.parseInt tree , \t p -> return (I.evalProg t p))
+    Just "-l"    -> Just (show . PS.toHaskellList                            , \t p -> return (I.evalProg t p))
+    Just "-li"   -> Just (PS.showIntListTree False                           , \t p -> return (I.evalProg t p))
+    Just "-liv"  -> Just (PS.showIntListTree True                            , \t p -> return (I.evalProg t p))
+    Just "-di"   -> let sfn = \tree -> maybe "E" show $ PS.parseInt tree         in Just (sfn, LI.evalProg sfn)
+    Just "-div"  -> let sfn = \tree -> maybe (show tree) show $ PS.parseInt tree in Just (sfn, LI.evalProg sfn)
+    Just "-dl"   -> let sfn = show . PS.toHaskellList                            in Just (sfn, LI.evalProg sfn)
+    Just "-dli"  -> let sfn = PS.showIntListTree False                           in Just (sfn, LI.evalProg sfn)
+    Just "-dliv" -> let sfn = PS.showIntListTree True                            in Just (sfn, LI.evalProg sfn)
+    Just _      -> Nothing
 
+-- Parse the command structure to pass appropriate arguments to doRun, or quit
+-- with an error/help message.
+main :: IO ()
 main = do
     args <- getArgs
-
     if (length args) == 0 then do
-        putStrLn "No arguments supplied. Run 'hwhile -h' for help."
-
+        putStrLn noArgsMessage
     else if (args !! 0) == "-h" then do
         putStrLn helpMessage
-
     else if (length args) == 2 then do
         let mainFile         = args !! 0
-        let mainFileDir      = takeDirectory mainFile
-        let mainFileBaseName = takeBaseName mainFile
         let argStr           = args !! 1
-        fileMap <- buildFileMap mainFileDir M.empty
-                (S.singleton mainFileBaseName)
-        putStrLn $ show
-                (runFromParts mainFileBaseName fileMap argStr)
-
+        doRun Nothing mainFile argStr
     else if (length args) == 3 then do
         let flagStr  = args !! 0
         let mainFile = args !! 1
-        let mainFileDir      = takeDirectory mainFile
-        let mainFileBaseName = takeBaseName mainFile
         let argStr   = args !! 2
-        fileMap <- buildFileMap mainFileDir M.empty
-                (S.singleton mainFileBaseName)
-        putStrLn $ showFlag flagStr
-                (runFromParts mainFileBaseName fileMap argStr)
-
+        doRun (Just flagStr) mainFile argStr
     else
-        putStrLn "Invalid argument(s) supplied. Run 'hwhile -h' for help."
+        putStrLn badArgsMessage
+
+doRun :: Maybe String -> FilePath -> String -> IO ()
+doRun flagStr mainFile argStr =
+    let mainFileDir      = takeDirectory mainFile
+        mainFileBaseName = takeBaseName mainFile
+    in case getShowFunctionAndInterpreterFunction flagStr of
+        Nothing           -> putStrLn badArgsMessage
+        Just (showFunction, interpreterFunction) -> do
+            fileMap <- buildFileMap mainFileDir M.empty $
+                S.singleton mainFileBaseName
+            result  <- runFromParts mainFileBaseName fileMap argStr interpreterFunction
+            putStrLn $ showFunction $ result

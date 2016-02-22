@@ -1,14 +1,15 @@
 module HWhileUtils where
 
-import qualified Data.Map        as M
-import qualified Data.Set        as S
+import qualified Data.Map           as M
+import qualified Data.Set           as S
 import System.FilePath
-import qualified Lexer           as L
-import qualified Parser          as P
-import qualified PureSyntax      as PS
+import qualified Lexer              as L
+import qualified Parser             as P
+import qualified PureSyntax         as PS
 import SugarSyntax
-import qualified PureInterpreter as I
-import qualified Unparser        as U
+import qualified PureInterpreter    as I
+import qualified LoggingInterpreter as LI
+import qualified Unparser           as U
 
 pathAndTextToProg :: FilePath -> String -> SuProgram
 pathAndTextToProg fp = P.parseProg . L.scan fp
@@ -25,19 +26,22 @@ pathAndTextToVal  fp = P.parseLVal . L.scan fp
 -- Run a program given the file path, and a map from file paths to files that
 -- are in the macro tree for the given file path
 runFromParts ::
-    FilePath                    ->  -- The 'main' file
-    (M.Map FilePath SuProgram)  ->  -- The map from filenames to programs
-    String                      ->  -- The argument string
-    PS.ETree                        -- The result of the execution
-runFromParts mainFile fileMap argStr =
-    I.evalProg (pathAndTextToVal "+IMPL+" argStr)
+    FilePath                                -> -- The 'main' file
+    (M.Map FilePath SuProgram)              -> -- Map from filenames to programs
+    String                                  -> -- The argument string
+    (PS.ETree -> PS.Program -> IO PS.ETree) -> -- The interpreter function
+    IO PS.ETree                                -- The result of the execution
+runFromParts mainFile fileMap argStr interpreter =
+    interpreter (pathAndTextToVal "+IMPL+" argStr)
         (desugarProg fileMap (fileMap M.! mainFile))
 
--- Open all files needed. Call 'buildFileMap M.empty (S.singleton filePath) to
--- open the file at 'filePath', and all files that the program in 'filePath'
--- uses, and all files that those files use, etc. Fails if there are circular
--- dependencies. Returns results in a map from file paths to the corresponding
--- programs. These can be passed to SugarSyntax.desugarProg.
+-- Open all files needed.
+-- Call 'buildFileMap myPath M.empty (S.singleton fileName)' to open the file
+-- 'fileName' in path 'path', and also open all files that the program in
+-- 'fileName' uses (these must also be at path 'path'), and all files that those
+-- files use, etc. Fails if there are circular dependencies. Returns results in
+-- a map from file paths to the corresponding programs. These can be passed to
+-- SugarSyntax.desugarProg.
 buildFileMap ::
     FilePath                                   -> -- The search path
     M.Map FilePath (S.Set FilePath, SuProgram) ->
