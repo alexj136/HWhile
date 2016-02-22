@@ -164,7 +164,9 @@ parseError []           = error "Parse error: reached end of file while parsing"
 parseError (tok : rest) = error $ concat
     [ "Parse error: "
     , (prettyPrintToken tok)
-    , " at line "
+    , " in program/macro '"
+    , tkPath tok
+    , "', at line "
     , (show (tkLineNo tok))
     , ", char "
     , (show (tkCharNo tok))
