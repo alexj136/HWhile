@@ -95,6 +95,12 @@ showIntListTree isVerbose e =
             (Nothing, _) | otherwise -> "E"
     in "[" ++ ((concat . intersperse ", ") strings) ++ "]"
 
+showNestedIntListTree :: ETree -> String
+showNestedIntListTree e = case parseInt e of
+    Just i  -> show i
+    Nothing -> let nextLevel = map showNestedIntListTree (toHaskellList e) in
+        "[" ++ ((concat . intersperse ", ") nextLevel) ++ "]"
+
 -- Parse an Int from a while Expression. Not all while expressions encode
 -- integers, so return a value in the Maybe monad.
 parseInt :: ETree -> Maybe Int

@@ -40,6 +40,9 @@ helpMessage = concat $ (intersperse "\n") $
     , "                will all display as 'E'."
     , "    -liv      - Display output as a list of integers. Invalid elements"
     , "                will all display as while trees."
+    , "    -L        - Display output as a nested list of integers. Valid"
+    , "                integers will display as such, and invalid integers will"
+    , "                display as nested lists of integers."
     , "    -d        - Display outputs as while trees, with debugging log"
     , "    -di       - Display outputs as integers, with debugging log. If"
     , "                outputs are not valid integers, 'E' will be displayed."
@@ -51,6 +54,10 @@ helpMessage = concat $ (intersperse "\n") $
     , "                log. Invalid elements will display as 'E'."
     , "    -dliv     - Display outputs as lists of integers, with debugging"
     , "                log. Invalid elements will display as while trees."
+    , "    -dL       - Display outputs as nested lists of integers, with"
+    , "                debugging log. Valid integers will display as such, and"
+    , "                invalid integers will display as nested lists of"
+    , "                integers."
     ]
 
 -- Compute a function to display an expression in a certain way according to the
@@ -65,11 +72,13 @@ getShowFunctionAndInterpreterFunction flagStr = case flagStr of
     Just "-l"    -> Just (show . PS.toHaskellList                            , \t p -> return (I.evalProg t p))
     Just "-li"   -> Just (PS.showIntListTree False                           , \t p -> return (I.evalProg t p))
     Just "-liv"  -> Just (PS.showIntListTree True                            , \t p -> return (I.evalProg t p))
+    Just "-L"    -> Just (PS.showNestedIntListTree                           , \t p -> return (I.evalProg t p))
     Just "-di"   -> let sfn = \tree -> maybe "E" show $ PS.parseInt tree         in Just (sfn, LI.evalProg sfn)
     Just "-div"  -> let sfn = \tree -> maybe (show tree) show $ PS.parseInt tree in Just (sfn, LI.evalProg sfn)
     Just "-dl"   -> let sfn = show . PS.toHaskellList                            in Just (sfn, LI.evalProg sfn)
     Just "-dli"  -> let sfn = PS.showIntListTree False                           in Just (sfn, LI.evalProg sfn)
     Just "-dliv" -> let sfn = PS.showIntListTree True                            in Just (sfn, LI.evalProg sfn)
+    Just "-dL"   -> let sfn = PS.showNestedIntListTree                           in Just (sfn, LI.evalProg sfn)
     Just _      -> Nothing
 
 -- Parse the command structure to pass appropriate arguments to doRun, or quit
