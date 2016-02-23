@@ -40,29 +40,28 @@ data Expression
 data ETree = ECons ETree ETree | ENil deriving (Eq, Ord)
 
 instance Show Name where
-    show (Name (fp, x)) = "<<" ++ x ++ " of " ++ fp ++ ">>"
+    show (Name (fp, x)) = x
 
 instance Show Program where
-    show (Program n c w) = "read " ++ (show n) ++ " {\n"
-                        ++ (show c) ++ "\n"
-                        ++ "} write " ++ (show w)
+    show (Program n b w) = "read " ++ (show n) ++ " "
+                        ++ (showBlock 0 b) ++ "write " ++ (show w)
 
 instance Show Command where
     show c = showC 0 c
 
 showBlock :: Int -> Block -> String
 showBlock i [] = "{}"
-showBlock i l  = (tabs i) ++ "{\n"
+showBlock i l  = "{\n"
               ++ (concat $ intersperse ";\n" $ map (showC (i + 1)) l)
               ++ "\n"
               ++ (tabs i) ++ "}\n"
 
 showC :: Int -> Command -> String
 showC i comm = tabs i ++ case comm of
-    While  x b     -> "while " ++ show x ++ showBlock (i + 1) b
+    While  x b     -> "while " ++ show x ++ showBlock i b
     Assign v x     -> (show v) ++ " := " ++ show x
-    IfElse e bt bf -> "if " ++ show e ++ " " ++ showBlock (i + 1) bt
-                   ++ (tabs i) ++ "else " ++ showBlock (i + 1) bf
+    IfElse e bt bf -> "if " ++ show e ++ " " ++ showBlock i bt
+                   ++ (tabs i) ++ "else " ++ showBlock i bf
 
 tabs :: Int -> String
 tabs x | x <  0 = error "negative tabs"
@@ -139,6 +138,9 @@ atomToInt atom = case atom of
 atomToTree :: Atom -> ETree
 atomToTree = intToTree . atomToInt
 
+treeToAtom :: ETree -> Maybe Atom
+treeToAtom t = parseInt t >>= intToAtom
+
 intToAtom :: Int -> Maybe Atom
 intToAtom int = case int of
     2  -> Just AtomAsgn
@@ -194,8 +196,7 @@ showBlockTree blk = do
 showCommandTree :: ETree -> Maybe String
 showCommandTree e = case toHaskellList e of
     [atomT, arg1, arg2] -> do
-        atomI <- parseInt  atomT
-        atom  <- intToAtom atomI
+        atom  <- treeToAtom atomT
         case atom of
             AtomWhile -> do
                 exp <- showExpressionTree arg1
@@ -207,8 +208,7 @@ showCommandTree e = case toHaskellList e of
                 return $ showStringsAsList [show atom, show var, exp]
             _ -> Nothing
     [atomT, arg1, arg2, arg3] -> do
-        atomI <- parseInt  atomT
-        atom  <- intToAtom atomI
+        atom  <- treeToAtom atomT
         case atom of
             AtomIf -> do
                 exp <- showExpressionTree arg1
@@ -221,8 +221,7 @@ showCommandTree e = case toHaskellList e of
 showExpressionTree :: ETree -> Maybe String
 showExpressionTree e = case toHaskellList e of
     [atomT, arg1, arg2] -> do
-        atomI <- parseInt  atomT
-        atom  <- intToAtom atomI
+        atom  <- treeToAtom atomT
         case atom of
             AtomCons -> do
                 hdE <- showExpressionTree arg1
@@ -230,14 +229,13 @@ showExpressionTree e = case toHaskellList e of
                 return $ showStringsAsList [show atom, hdE, tlE]
             _        -> Nothing
     [atomT, ENil] -> do
-        atomI <- parseInt  atomT
-        atom  <- intToAtom atomI
+        atom  <- treeToAtom atomT
         case atom of
             AtomQuote -> return $ showStringsAsList [show atom, show ENil]
+            AtomVar   -> return $ showStringsAsList [show atom, show ENil]
             _         -> Nothing
     [atomT, arg] -> do
-        atomI <- parseInt  atomT
-        atom  <- intToAtom atomI
+        atom  <- treeToAtom atomT
         case atom of
             AtomVar   -> do
                 var <- parseInt arg

@@ -9,7 +9,7 @@ import qualified PureSyntax         as PS
 import SugarSyntax
 import qualified PureInterpreter    as I
 import qualified LoggingInterpreter as LI
-import qualified Unparser           as U
+import Unparser
 import HWhileUtils
 
 noArgsMessage :: String
@@ -68,6 +68,8 @@ helpMessage = concat $ (intersperse "\n") $
     , "                invalid atoms that are valid integers will display as"
     , "                integers, and invalid integers will display as nested"
     , "                lists of atoms and integers."
+    , "    -u        - Run the unparser on the given program. In this mode, no"
+    , "                argument expression should be supplied."
     ]
 
 -- Compute a function to display an expression in a certain way according to the
@@ -102,6 +104,9 @@ main = do
         putStrLn noArgsMessage
     else if (args !! 0) == "-h" then do
         putStrLn helpMessage
+    else if (length args) == 2 && (args !! 0) == "-u" then do
+        let mainFile = args !! 1
+        doUnparse mainFile
     else if (length args) == 2 then do
         let mainFile         = args !! 0
         let argStr           = args !! 1
@@ -113,6 +118,16 @@ main = do
         doRun (Just flagStr) mainFile argStr
     else
         putStrLn badArgsMessage
+
+doUnparse :: FilePath -> IO ()
+doUnparse mainFile =
+    let mainFileDir      = takeDirectory mainFile
+        mainFileBaseName = takeBaseName mainFile
+    in do
+        fileMap <- buildFileMap mainFileDir M.empty $
+            S.singleton mainFileBaseName
+        let prog = desugarProg fileMap (fileMap M.! mainFileBaseName)
+        maybe (putStrLn "E") putStrLn (PS.showProgramTree (unparse prog))
 
 doRun :: Maybe String -> FilePath -> String -> IO ()
 doRun flagStr mainFile argStr =
