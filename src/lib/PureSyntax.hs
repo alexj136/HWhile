@@ -81,6 +81,82 @@ instance Show ETree where
     show  ENil       = "nil"
     show (ECons l r) = "<" ++ show l ++ "." ++ show r ++ ">"
 
+data Atom
+    = AtomAsgn
+    | AtomDoAsgn
+    | AtomWhile
+    | AtomDoWhile
+    | AtomIf
+    | AtomDoIf
+    | AtomVar
+    | AtomQuote
+    | AtomHd
+    | AtomDoHd
+    | AtomTl
+    | AtomDoTl
+    | AtomCons
+    | AtomDoCons
+    deriving (Eq, Ord)
+
+instance Show Atom where
+    show atom = case atom of
+        AtomAsgn    -> "@asgn"
+        AtomDoAsgn  -> "@doAsgn"
+        AtomWhile   -> "@while"
+        AtomDoWhile -> "@doWhile"
+        AtomIf      -> "@if"
+        AtomDoIf    -> "@doIf"
+        AtomVar     -> "@var"
+        AtomQuote   -> "@quote"
+        AtomHd      -> "@hd"
+        AtomDoHd    -> "@doHd"
+        AtomTl      -> "@tl"
+        AtomDoTl    -> "@doTl"
+        AtomCons    -> "@cons"
+        AtomDoCons  -> "@doCons"
+
+--------------------------------------------------------------------------------
+-- Syntax Conversion & Showing Functions
+--------------------------------------------------------------------------------
+
+atomToInt :: Atom -> Int
+atomToInt atom = case atom of
+    AtomAsgn    ->  2
+    AtomDoAsgn  ->  3
+    AtomWhile   ->  5
+    AtomDoWhile ->  7
+    AtomIf      -> 11
+    AtomDoIf    -> 13
+    AtomVar     -> 17
+    AtomQuote   -> 19
+    AtomHd      -> 23
+    AtomDoHd    -> 29
+    AtomTl      -> 31
+    AtomDoTl    -> 37
+    AtomCons    -> 41
+    AtomDoCons  -> 43
+
+atomToTree :: Atom -> ETree
+atomToTree = intToTree . atomToInt
+
+intToAtom :: Int -> Maybe Atom
+intToAtom int = case int of
+    2  -> Just AtomAsgn
+    3  -> Just AtomDoAsgn
+    5  -> Just AtomWhile
+    7  -> Just AtomDoWhile
+    11 -> Just AtomIf
+    13 -> Just AtomDoIf
+    17 -> Just AtomVar
+    19 -> Just AtomQuote
+    23 -> Just AtomHd
+    29 -> Just AtomDoHd
+    31 -> Just AtomTl
+    37 -> Just AtomDoTl
+    41 -> Just AtomCons
+    43 -> Just AtomDoCons
+    _  -> Nothing
+
 -- Convert a while integer expression into a decimal number string. If the
 -- isVerbose argument is True, unparsable expressions will be displayed in full.
 -- If it is False, unparsable expressions yield "E".
@@ -98,22 +174,82 @@ showNestedIntListTree e = maybe
 
 showNestedAtomIntListTree :: ETree -> String
 showNestedAtomIntListTree e = case parseInt e of
-    Just  2 -> "@asgn"
-    Just  3 -> "@doAsgn"
-    Just  5 -> "@while"
-    Just  7 -> "@doWhile"
-    Just 11 -> "@if"
-    Just 13 -> "@doIf"
-    Just 17 -> "@var"
-    Just 19 -> "@quote"
-    Just 23 -> "@hd"
-    Just 29 -> "@doHd"
-    Just 31 -> "@tl"
-    Just 37 -> "@doTl"
-    Just 41 -> "@cons"
-    Just 43 -> "@doCons"
-    Just  i -> show i
+    Just i  -> maybe (show i) show (intToAtom i)
     Nothing -> showListOf showNestedAtomIntListTree (toHaskellList e)
+
+showProgramTree :: ETree -> Maybe String
+showProgramTree e = case toHaskellList e of
+    [x, blk, y] -> do
+        xi     <- parseInt x
+        yi     <- parseInt y
+        blkStr <- showBlockTree blk
+        return $ showStringsAsList [show xi, blkStr, show yi]
+    _ -> Nothing
+
+showBlockTree :: ETree -> Maybe String
+showBlockTree blk = do
+    comms <- sequence $ map showCommandTree $ toHaskellList blk
+    return $ "[" ++ (concat $ intersperse ", " $ comms) ++ "]"
+
+showCommandTree :: ETree -> Maybe String
+showCommandTree e = case toHaskellList e of
+    [atomT, arg1, arg2] -> do
+        atomI <- parseInt  atomT
+        atom  <- intToAtom atomI
+        case atom of
+            AtomWhile -> do
+                exp <- showExpressionTree arg1
+                blk <- showBlockTree      arg2
+                return $ showStringsAsList [show atom, exp, blk]
+            AtomAsgn  -> do
+                var <- parseInt           arg1
+                exp <- showExpressionTree arg2
+                return $ showStringsAsList [show atom, show var, exp]
+            _ -> Nothing
+    [atomT, arg1, arg2, arg3] -> do
+        atomI <- parseInt  atomT
+        atom  <- intToAtom atomI
+        case atom of
+            AtomIf -> do
+                exp <- showExpressionTree arg1
+                bt  <- showBlockTree      arg2
+                bf  <- showBlockTree      arg3
+                return $ showStringsAsList [show atom, exp, bt, bf]
+            _ -> Nothing
+    _ -> Nothing
+
+showExpressionTree :: ETree -> Maybe String
+showExpressionTree e = case toHaskellList e of
+    [atomT, arg1, arg2] -> do
+        atomI <- parseInt  atomT
+        atom  <- intToAtom atomI
+        case atom of
+            AtomCons -> do
+                hdE <- showExpressionTree arg1
+                tlE <- showExpressionTree arg2
+                return $ showStringsAsList [show atom, hdE, tlE]
+            _        -> Nothing
+    [atomT, ENil] -> do
+        atomI <- parseInt  atomT
+        atom  <- intToAtom atomI
+        case atom of
+            AtomQuote -> return $ showStringsAsList [show atom, show ENil]
+            _         -> Nothing
+    [atomT, arg] -> do
+        atomI <- parseInt  atomT
+        atom  <- intToAtom atomI
+        case atom of
+            AtomVar   -> do
+                var <- parseInt arg
+                return $ showStringsAsList [show atom, show var]
+            AtomHd    -> do
+                exp <- showExpressionTree arg
+                return $ showStringsAsList [show atom, exp]
+            AtomTl    -> do
+                exp <- showExpressionTree arg
+                return $ showStringsAsList [show atom, exp]
+            _ -> Nothing
+    _ -> Nothing
 
 -- Parse an Int from a while Expression. Not all while expressions encode
 -- integers, so return a value in the Maybe monad.
@@ -125,6 +261,13 @@ parseInt = parseIntAcc 0
     parseIntAcc acc (ECons ENil x) = parseIntAcc (acc + 1) x
     parseIntAcc acc _              = Nothing
 
+-- Makes an Expression from an Int, using accumulating parameter style
+intToTree :: Int -> ETree
+intToTree = intToTreeAcc ENil
+    where
+    intToTreeAcc acc 0 = acc
+    intToTreeAcc acc n = intToTreeAcc (ECons ENil acc) (n - 1)
+
 -- Convert a while expression encoded list into a haskell list
 toHaskellList :: ETree -> [ETree]
 toHaskellList = reverse . (toHaskellListAcc [])
@@ -134,6 +277,22 @@ toHaskellList = reverse . (toHaskellListAcc [])
         ENil              -> acc
         (ECons elem rest) -> toHaskellListAcc (elem : acc) rest
 
--- given a function to show an ETree and a list 
+-- Given a function to show an ETree and a list of ETrees, show a a list of
+-- ETrees where the elements are shown by the given function
 showListOf :: (ETree -> String) -> [ETree] -> String
-showListOf showFn l = "[" ++ (concat $ intersperse ", " $ (map showFn l)) ++ "]"
+showListOf showFn = showStringsAsList . map showFn
+
+-- Take a list of strings, intersperse ", " within them, concatenate them and
+-- add square brackets around that
+showStringsAsList :: [String] -> String
+showStringsAsList ss = "[" ++ (concat $ intersperse ", " ss) ++ "]"
+
+-- Convert a list of Expressions into a single list expression
+expFromHaskellList :: [Expression] -> Expression
+expFromHaskellList (h:t) = Cons h (expFromHaskellList t)
+expFromHaskellList []    = Lit ENil
+
+-- Convert a list of ETrees into a single list ETree
+treeFromHaskellList :: [ETree] -> ETree
+treeFromHaskellList (h:t) = ECons h (treeFromHaskellList t)
+treeFromHaskellList []    = ENil

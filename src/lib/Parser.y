@@ -83,24 +83,24 @@ EXPR : Cons EXPR EXPR       { Cons $2 $3            }
      | Hd EXPR              { Hd $2                 }
      | Tl EXPR              { Tl $2                 }
      | EXPR IsEq EXPR       { IsEq $1 $3            }
-     | EXPLIST              { expListToWhileList $1 }
+     | EXPLIST              { expFromHaskellList $1 }
      | VAL                  { Lit $1                }
 
 ATOM :: { ETree }
-ATOM : AtAsgn    { intToExp  2 ENil }
-     | AtDoAsgn  { intToExp  3 ENil }
-     | AtWhile   { intToExp  5 ENil }
-     | AtDoWhile { intToExp  7 ENil }
-     | AtIf      { intToExp 11 ENil }
-     | AtDoIf    { intToExp 13 ENil }
-     | AtVar     { intToExp 17 ENil }
-     | AtQuote   { intToExp 19 ENil }
-     | AtHd      { intToExp 23 ENil }
-     | AtDoHd    { intToExp 29 ENil }
-     | AtTl      { intToExp 31 ENil }
-     | AtDoTl    { intToExp 37 ENil }
-     | AtCons    { intToExp 41 ENil }
-     | AtDoCons  { intToExp 43 ENil }
+ATOM : AtAsgn    { intToTree  2 }
+     | AtDoAsgn  { intToTree  3 }
+     | AtWhile   { intToTree  5 }
+     | AtDoWhile { intToTree  7 }
+     | AtIf      { intToTree 11 }
+     | AtDoIf    { intToTree 13 }
+     | AtVar     { intToTree 17 }
+     | AtQuote   { intToTree 19 }
+     | AtHd      { intToTree 23 }
+     | AtDoHd    { intToTree 29 }
+     | AtTl      { intToTree 31 }
+     | AtDoTl    { intToTree 37 }
+     | AtCons    { intToTree 41 }
+     | AtDoCons  { intToTree 43 }
 
 EXPLIST :: { [Expression] }
 EXPLIST : OpenSqu ClosSqu          { []      }
@@ -132,24 +132,24 @@ SWITCHCONT : Case EXPR Colon CMDS SWITCHCONT { (($2, $4) : fst $5, snd $5) }
            | Default Colon CMDS ClosCur      { ([]               , $3    ) }
 
 VAL :: { ETree }
-VAL : Nil                         { ENil             }
-    | OpenAng VAL Dot VAL ClosAng { ECons $2 $4      }
-    | Int                         { intToExp $1 ENil }
-    | True                        { intToExp 1 ENil  }
-    | False                       { intToExp 0 ENil  }
-    | ATOM                        { $1               }
+VAL : Nil                         { ENil         }
+    | OpenAng VAL Dot VAL ClosAng { ECons $2 $4  }
+    | Int                         { intToTree $1 }
+    | True                        { intToTree 1  }
+    | False                       { intToTree 0  }
+    | ATOM                        { $1           }
 
 -- LVALs are VALs, but also with lists allowed. They are only used for command
 -- line input, as adding lists to general VALs that occur within EXPs casues
 -- ambiguity.
 LVAL :: { ETree }
-LVAL : Nil                           { ENil                  }
-     | OpenAng LVAL Dot LVAL ClosAng { ECons $2 $4           }
-     | Int                           { intToExp $1 ENil      }
-     | True                          { intToExp 1 ENil       }
-     | False                         { intToExp 0 ENil       }
-     | LVALLIST                      { litListToWhileList $1 }
-     | ATOM                          { $1                    }
+LVAL : Nil                           { ENil                   }
+     | OpenAng LVAL Dot LVAL ClosAng { ECons $2 $4            }
+     | Int                           { intToTree $1           }
+     | True                          { intToTree 1            }
+     | False                         { intToTree 0            }
+     | LVALLIST                      { treeFromHaskellList $1 }
+     | ATOM                          { $1                     }
 
 LVALLIST :: { [ETree] }
 LVALLIST : OpenSqu ClosSqu           { []      }
@@ -171,19 +171,4 @@ parseError (tok : rest) = error $ concat
     , ", char "
     , (show (tkCharNo tok))
     ]
-
--- Makes an Expression from an Int, using accumulating parameter style
-intToExp :: Int -> ETree -> ETree
-intToExp 0 acc = acc
-intToExp n acc = intToExp (n - 1) (ECons ENil acc)
-
--- Convert a parsed list of Expressions into an actual while list
-expListToWhileList :: [Expression] -> Expression
-expListToWhileList (h:t) = Cons h (expListToWhileList t)
-expListToWhileList []    = Lit ENil
-
--- Convert a parsed list of ETrees into an actual while list
-litListToWhileList :: [ETree] -> ETree
-litListToWhileList (h:t) = ECons h (litListToWhileList t)
-litListToWhileList []    = ENil
 }

@@ -41,33 +41,64 @@ varMapName :: VarMap -> Name -> VarMap
 varMapName vm n | M.member n vm = vm
                 | otherwise     = M.insert n ((succ . maximum . M.elems) vm) vm
 
-unparse :: Program -> String
-unparse p = unparseProg 0 (varMapProg p) p
+unparse :: Program -> ETree
+unparse p = unparseProg (varMapProg p) p
 
-unparseProg :: Int -> VarMap -> Program -> String
-unparseProg ts vm (Program x b y) = concat $ intersperse "\n" $ map (tabs ts ++)
-    [ "[ " ++ show (vm M.! x)
-    , ", " ++ unparseBlock (succ ts) vm b
-    , ", " ++ show (vm M.! y)
-    , "]"
-    ]
+unparseProg :: VarMap -> Program -> ETree
+unparseProg vm (Program x b y) =
+    treeFromHaskellList [unparseName vm x, unparseBlock vm b, unparseName vm y]
 
-unparseBlock :: Int -> VarMap -> Block -> String
-unparseBlock ts vm [] = "[]"
-unparseBlock ts vm l  = "{\n" ++
-    (concat $ intersperse ";\n" $ map (unparseComm (ts + 1) vm) l)
-    ++ "\n"
-    ++ (tabs ts) ++ "}"
+unparseBlock :: VarMap -> Block -> ETree
+unparseBlock vm blk = treeFromHaskellList $ map (unparseComm vm) blk
 
-unparseComm :: Int -> VarMap -> Command -> String
-unparseComm ts vm comm = tabs ts ++ case comm of
-    Assign v x     -> "[ @asgn , " ++ show (vm M.! v) ++ " , "
-                   ++ unparseExpr ts vm x ++ " ]"
-    While x b      -> "[ @while , " ++ unparseExpr ts vm x ++ " , "
-                   ++ unparseBlock ts vm b ++ " ]"
-    IfElse e bt bf -> "[ @if , " ++ unparseExpr ts vm e ++ " , "
-                   ++ unparseBlock ts vm bt ++ " , "
-                   ++ unparseBlock ts vm bf ++ " ]"
+unparseComm :: VarMap -> Command -> ETree
+unparseComm vm comm = treeFromHaskellList $ case comm of
+    Assign v x     ->
+        [ atomToTree AtomAsgn
+        , unparseName vm v
+        , unparseExpr vm x
+        ]
+    While  x b     ->
+        [ atomToTree AtomWhile
+        , unparseExpr vm x
+        , unparseBlock vm b
+        ]
+    IfElse x bt bf ->
+        [ atomToTree AtomIf
+        , unparseExpr vm x
+        , unparseBlock vm bt
+        , unparseBlock vm bf
+        ]
 
-unparseExpr :: Int -> VarMap -> Expression -> String
-unparseExpr ts vm expr = undefined
+unparseExpr :: VarMap -> Expression -> ETree
+unparseExpr vm expr = treeFromHaskellList $ case expr of
+    Lit (ECons a b) ->
+        [ atomToTree AtomCons
+        , unparseExpr vm (Lit a)
+        , unparseExpr vm (Lit b)
+        ]
+    Lit  ENil       ->
+        [ atomToTree AtomQuote
+        , ENil
+        ]
+    Var  s          ->
+        [ atomToTree AtomVar
+        , unparseName vm s
+        ]
+    Cons a b        ->
+        [ atomToTree AtomCons
+        , unparseExpr vm a
+        , unparseExpr vm b
+        ]
+    Hd   x          ->
+        [ atomToTree AtomHd
+        , unparseExpr vm x
+        ]
+    Tl   x          ->
+        [ atomToTree AtomTl
+        , unparseExpr vm x
+        ]
+    IsEq a b        -> undefined
+
+unparseName :: VarMap -> Name -> ETree
+unparseName vm n = maybe (error "Unparse VarMap miss") intToTree (M.lookup n vm)
