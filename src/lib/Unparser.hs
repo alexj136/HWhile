@@ -98,7 +98,89 @@ unparseExpr vm expr = treeFromHaskellList $ case expr of
         [ atomToTree AtomTl
         , unparseExpr vm x
         ]
-    IsEq a b        -> undefined
+    IsEq a b        -> error "Unparse equality expression"
 
 unparseName :: VarMap -> Name -> ETree
 unparseName vm n = maybe (error "Unparse VarMap miss") intToTree (M.lookup n vm)
+
+removeEquality :: Program -> Program
+removeEquality (Program x blk y) = Program x (removeEqualityBlock blk) y
+
+removeEqualityBlock :: Block -> Block
+removeEqualityBlock = concat . map removeEqualityComm
+
+removeEqualityComm :: Command -> Block
+removeEqualityComm comm = case comm of
+    Assign v x     -> undefined
+    While  x b     -> undefined
+    IfElse x bt bf -> undefined
+
+replaceEqualities :: Expression -> (Expression, [(Name, Expression, Expression)])
+replaceEqualities exp = case exp of
+    Var  _   -> (exp, [])
+    Lit  _   -> (exp, [])
+    Hd   x   -> let (rX, subs) = replaceEqualities x in (Hd rX, subs)
+    Tl   x   -> let (rX, subs) = replaceEqualities x in (Tl rX, subs)
+    Cons a b -> let
+        (rA, subsA) = replaceEqualities a
+        (rB, subsB) = replaceEqualities b in
+            (Cons rA rB, subsA ++ subsB)
+    IsEq a b -> let
+        (rA, subsA) = replaceEqualities a
+        (rB, subsB) = replaceEqualities b in
+            (Var undefined, (undefined, a, b) : subsA ++ subsB)
+
+equalityTester :: Command
+equalityTester = IfElse (Lit ENil) []
+    [ asgn equals (Lit (intToTree 1))
+    , whilev stack
+        [ asgn next  (Hd (Var (iname stack)))
+        , asgn stack (Tl (Var (iname stack)))
+        , asgn a     (Hd (Var (iname next)))
+        , asgn b     (Hd (Tl (Var (iname next))))
+        , ifv a
+            [ ifv b
+                [ asgn stack (Cons (Cons (Hd (v a)) (Cons (Hd (v b)) (Lit ENil))) (v stack))
+                , asgn stack (Cons (Cons (Tl (v a)) (Cons (Tl (v b)) (Lit ENil))) (v stack))
+                ]
+                [ asgn stack  (Lit ENil)
+                , asgn equals (Lit ENil)
+                ]
+            ]
+            [ ifv b
+                [ asgn stack  (Lit ENil)
+                , asgn equals (Lit ENil)
+                ] []
+            ]
+        ]
+    ]
+    where
+    a :: String
+    a = "+NEXT+A+"
+
+    b :: String
+    b = "+NEXT+B+"
+
+    next :: String
+    next = "+NEXT+"
+
+    stack :: String
+    stack = "+STACK+"
+
+    equals :: String
+    equals = "+EQUALS+"
+
+    iname :: String -> Name
+    iname n = Name ("+IMPL+", n)
+
+    v :: String -> Expression
+    v = Var . iname
+
+    asgn :: String -> Expression -> Command
+    asgn n = Assign (iname n)
+
+    ifv :: String -> Block -> Block -> Command
+    ifv n = IfElse (Var (iname n))
+
+    whilev :: String -> Block -> Command
+    whilev n = While (Var (iname n))
