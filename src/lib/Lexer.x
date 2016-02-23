@@ -184,7 +184,7 @@ prettyPrintToken t = case t of
     Token (_, TkWrite       , _) -> "'write'" 
     Token (_, TkTrue        , _) -> "'true'" 
     Token (_, TkFalse       , _) -> "'false'" 
-    Token (_, TkAtomAsgn    , _) -> "'@asgn'"
+    Token (_, TkAtomAsgn    , _) -> "'@:=' (or '@asgn')"
     Token (_, TkAtomDoAsgn  , _) -> "'@doAsgn'"
     Token (_, TkAtomWhile   , _) -> "'@while'"
     Token (_, TkAtomDoWhile , _) -> "'@doWhile'"

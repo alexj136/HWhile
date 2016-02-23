@@ -99,7 +99,7 @@ data Atom
 
 instance Show Atom where
     show atom = case atom of
-        AtomAsgn    -> "@asgn"
+        AtomAsgn    -> "@:="
         AtomDoAsgn  -> "@doAsgn"
         AtomWhile   -> "@while"
         AtomDoWhile -> "@doWhile"
@@ -175,9 +175,19 @@ showNestedIntListTree e = maybe
     (showListOf showNestedIntListTree (toHaskellList e)) show (parseInt e)
 
 showNestedAtomIntListTree :: ETree -> String
-showNestedAtomIntListTree e = case parseInt e of
-    Just i  -> maybe (show i) show (intToAtom i)
-    Nothing -> showListOf showNestedAtomIntListTree (toHaskellList e)
+showNestedAtomIntListTree = tryAtomThenIntThenList
+    where
+    tryIntThenList :: ETree -> String
+    tryIntThenList t = case parseInt t of
+        Just i  -> show i
+        Nothing -> case toHaskellList t of
+            []   -> "0" -- unreachable as this would parse as an int
+            e:es -> showStringsAsList $
+                tryAtomThenIntThenList e : (map tryIntThenList es)
+    tryAtomThenIntThenList :: ETree -> String
+    tryAtomThenIntThenList t = case treeToAtom t of
+        Just a  -> show a
+        Nothing -> tryIntThenList t
 
 showProgramTree :: ETree -> Maybe String
 showProgramTree e = case toHaskellList e of
