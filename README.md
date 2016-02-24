@@ -1,11 +1,11 @@
 ## HWhile
 HWhile is an interpreter for the While language written in Haskell. The While
 language is a simple imperative programming language, with while-loops,
-assignment, and a single data type: binary trees. The language was concieved by
-Neil D. Jones in his book: Computability and Complexity from a Programming
-Perspective, available [here](http://www.diku.dk/~neil/Comp2book.html). This
-implementation is loosely based on the language described in the book. See the
-examples directory for some example code.
+assignment and conditionals. It has a single data type: binary trees.
+
+This implementation also includes syntactic sugar such as switch statements,
+macros and natural numbers, all of which are translated into 'pure' while before
+execution.
 
 ### Syntax
 The grammar below gives exactly the concrete syntax of this implementation:
