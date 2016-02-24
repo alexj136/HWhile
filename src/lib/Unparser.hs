@@ -6,6 +6,15 @@ import Data.List (intersperse)
 import qualified Data.Map as M
 import PureSyntax
 
+unparse :: Program -> ETree
+unparse p =
+    let (vmNoEq, pNoEq) = removeEquality (varMapProg p) p in
+        unparseProg vmNoEq pNoEq
+
+--------------------------------------------------------------------------------
+-- VarMap generation functions
+--------------------------------------------------------------------------------
+
 -- A VarMap is a Data.Map from variable names to integers for a program, for use
 -- in list representations of programs.
 type VarMap = M.Map Name Int
@@ -41,8 +50,9 @@ varMapName :: VarMap -> Name -> VarMap
 varMapName vm n | M.member n vm = vm
                 | otherwise     = M.insert n ((succ . maximum . M.elems) vm) vm
 
-unparse :: Program -> ETree
-unparse p = unparseProg (varMapProg p) p
+--------------------------------------------------------------------------------
+-- Unparsing functions - require equality to already be removed
+--------------------------------------------------------------------------------
 
 unparseProg :: VarMap -> Program -> ETree
 unparseProg vm (Program x b y) =
@@ -103,58 +113,107 @@ unparseExpr vm expr = treeFromHaskellList $ case expr of
 unparseName :: VarMap -> Name -> ETree
 unparseName vm n = maybe (error "Unparse VarMap miss") intToTree (M.lookup n vm)
 
-removeEquality :: Program -> Program
-removeEquality (Program x blk y) = Program x (removeEqualityBlock blk) y
+--------------------------------------------------------------------------------
+-- Equality removal functions - require a VarMap for the given program
+--------------------------------------------------------------------------------
 
-removeEqualityBlock :: Block -> Block
-removeEqualityBlock = concat . map removeEqualityComm
+-- To remove equality from a program, remove it from the block
+removeEquality :: VarMap -> Program -> (VarMap, Program)
+removeEquality vm (Program x blk y) =
+    let (vmB, rBlk) = removeEqualityBlock vm blk in (vmB, Program x rBlk y)
 
-removeEqualityComm :: Command -> Block
-removeEqualityComm comm = case comm of
-    Assign v x     -> undefined
-    While  x b     -> undefined
-    IfElse x bt bf -> undefined
+-- To remove equality from a block, remove it from each command in the block
+removeEqualityBlock :: VarMap -> Block -> (VarMap, Block)
+removeEqualityBlock vm []     = (vm, [])
+removeEqualityBlock vm (c:cs) =
+    let (vmC , cBlk) = removeEqualityComm  vm  c
+        (vmCs, rBlk) = removeEqualityBlock vmC cs in
+            (vmCs, cBlk ++ rBlk)
 
-replaceEqualities :: Expression -> (Expression, [(Name, Expression, Expression)])
-replaceEqualities exp = case exp of
-    Var  _   -> (exp, [])
-    Lit  _   -> (exp, [])
-    Hd   x   -> let (rX, subs) = replaceEqualities x in (Hd rX, subs)
-    Tl   x   -> let (rX, subs) = replaceEqualities x in (Tl rX, subs)
+-- To remove equality from a command, replace all equality expressions in
+-- contained expressions with new variables, and assign to those variables the
+-- result of the equalities, prior to the command itself.
+removeEqualityComm :: VarMap -> Command -> (VarMap, Block)
+removeEqualityComm vm comm = case comm of
+    Assign v x     -> case removeEqualityExpr vm x of
+        (_  , _ , [] ) -> (vm ,        [ Assign v x  ])
+        (vmX, rX, blk) -> (vmX, blk ++ [ Assign v rX ])
+    While  x b     -> let (vmB, blkN) = removeEqualityBlock vm b in
+        case removeEqualityExpr vmB x of
+            (_   , _ , []  ) -> (vmB ,         [ While x  blkN ])
+            (vmBX, rX, blkX) -> (vmBX, blkX ++ [ While rX blkN ])
+    IfElse x bt bf -> let
+        (vmBT  , blkT) = removeEqualityBlock vm   bt
+        (vmBTBF, blkF) = removeEqualityBlock vmBT bf in
+        case removeEqualityExpr vmBTBF x of
+            (_      , _ , []  ) -> (vmBTBF ,         [ IfElse x  blkT blkF ])
+            (vmBTBFX, rX, blkX) -> (vmBTBFX, blkX ++ [ IfElse rX blkT blkF ])
+
+-- Insert variables in place of equality expressions, returning the new
+-- expression and a list of commands to evaluate equality, leaving the result in
+-- the inserted variable.
+removeEqualityExpr ::
+    VarMap     ->   -- the initial VarMap
+    Expression ->   -- the expression to substitute
+    ( VarMap        -- the final VarMap
+    , Expression    -- the replacement expression (always a Var)
+    , Block         -- Commands to evaluate the equality
+    )
+removeEqualityExpr vm exp = case exp of
+    Var  _ -> (vm, exp, [])
+    Lit  _ -> (vm, exp, [])
+    Hd   x -> let (vmX, rX, blk) = removeEqualityExpr vm x in (vmX, Hd rX, blk)
+    Tl   x -> let (vmX, rX, blk) = removeEqualityExpr vm x in (vmX, Tl rX, blk)
     Cons a b -> let
-        (rA, subsA) = replaceEqualities a
-        (rB, subsB) = replaceEqualities b in
-            (Cons rA rB, subsA ++ subsB)
+        (vmA , rA, blkA) = removeEqualityExpr vm  a
+        (vmAB, rB, blkB) = removeEqualityExpr vmA b in
+            (vmAB, Cons rA rB, blkA ++ blkB)
     IsEq a b -> let
-        (rA, subsA) = replaceEqualities a
-        (rB, subsB) = replaceEqualities b in
-            (Var undefined, (undefined, a, b) : subsA ++ subsB)
+        (vmA , rA, blkA) = removeEqualityExpr vm  a
+        (vmAB, rB, blkB) = removeEqualityExpr vmA b
+        nameNum          = (succ . maximum . M.elems) vm
+        name             = iname ("+EQ+" ++ show nameNum ++ "+")
+        vmABN            = M.insert name nameNum vmAB
+        (vmABNE, eqComm) = equalityTester vmABN name
+        in
+        (vmABNE, Var name, blkA ++ blkB ++
+            [ Assign (iname stack) (lst [lst [rA, rB]])
+            , eqComm
+            ])
 
-equalityTester :: Command
-equalityTester = IfElse (Lit ENil) []
-    [ asgn equals (Lit (intToTree 1))
-    , whilev stack
-        [ asgn next  (Hd (Var (iname stack)))
-        , asgn stack (Tl (Var (iname stack)))
-        , asgn a     (Hd (Var (iname next)))
-        , asgn b     (Hd (Tl (Var (iname next))))
-        , ifv a
-            [ ifv b
-                [ asgn stack (Cons (Cons (Hd (v a)) (Cons (Hd (v b)) (Lit ENil))) (v stack))
-                , asgn stack (Cons (Cons (Tl (v a)) (Cons (Tl (v b)) (Lit ENil))) (v stack))
+-- Generate a command that tests equality using a stack. Requires the stack set
+-- up as a singleton list containing a two element list, where the inner list
+-- contains either side of the equality expression. Once the command has run,
+-- the variable with the given name will be 0 if not equal, or 1 if they are.
+equalityTester :: VarMap -> Name -> (VarMap, Command)
+equalityTester vm equals = let
+    vmNew = foldl (\m n -> varMapName m (iname n)) vm [stack, next, a, b]
+    in (vmNew, IfElse (Lit ENil) []
+        [ Assign equals (Lit (intToTree 1))
+        , whilev stack
+            [ asgn next  (Hd (v stack))
+            , asgn stack (Tl (v stack))
+            , asgn a     (Hd (v next ))
+            , asgn b     (Hd (Tl (v next)))
+            , ifv a
+                [ ifv b
+                    [ asgn stack $ Cons (lst [Hd (v a), Hd (v b)]) (v stack)
+                    , asgn stack $ Cons (lst [Tl (v a), Tl (v b)]) (v stack)
+                    ]
+                    [ asgn   stack  (Lit ENil)
+                    , Assign equals (Lit ENil)
+                    ]
                 ]
-                [ asgn stack  (Lit ENil)
-                , asgn equals (Lit ENil)
+                [ ifv b
+                    [ asgn   stack  (Lit ENil)
+                    , Assign equals (Lit ENil)
+                    ] []
                 ]
             ]
-            [ ifv b
-                [ asgn stack  (Lit ENil)
-                , asgn equals (Lit ENil)
-                ] []
-            ]
-        ]
-    ]
+        ])
     where
+    -- AST helper functions
+
     a :: String
     a = "+NEXT+A+"
 
@@ -163,15 +222,6 @@ equalityTester = IfElse (Lit ENil) []
 
     next :: String
     next = "+NEXT+"
-
-    stack :: String
-    stack = "+STACK+"
-
-    equals :: String
-    equals = "+EQUALS+"
-
-    iname :: String -> Name
-    iname n = Name ("+IMPL+", n)
 
     v :: String -> Expression
     v = Var . iname
@@ -184,3 +234,13 @@ equalityTester = IfElse (Lit ENil) []
 
     whilev :: String -> Block -> Command
     whilev n = While (Var (iname n))
+
+lst :: [Expression] -> Expression
+lst []     = Lit ENil
+lst (e:es) = Cons e (lst es)
+
+iname :: String -> Name
+iname n = Name ("+IMPL+", n)
+
+stack :: String
+stack = "+STACK+"
