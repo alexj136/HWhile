@@ -10,35 +10,45 @@ examples directory for some example code.
 ### Syntax
 The grammar below gives exactly the concrete syntax of this implementation:
 
-    PROG  ::= read ID BLOCK write ID
+    PROG  ::= ID read ID BLOCK write ID
     
-    BLOCK ::= { CMD }
+    BLOCK ::= { CMDS }
             | {}
 
-    CMD   ::= CMD; CMD                      // Sequential composition
-            | ID := EXP                     // Assignment
+    CMDS  ::= CMD ; CMD
+            | CMD
+
+    CMD   ::= ID := EXP                     // Assignment
             | while EXP BLOCK               // While loops
             | if EXP BLOCK else BLOCK       // If-then-else statements
             | if EXP BLOCK                  // If-then statements
-            | switch EXP { CASES            // Switch statements
             | ID := <ID> EXP                // Macro calls
+            | switch EXP { CASES            // Switch statements
 
-    CASES ::= case EXP : CMD CASES
-            | default : CMD }
+    CASES ::= case EXP : CMDS CASES
+            | default : CMDS }
             | }
 
-    EXP   ::= nil
+    EXP   ::= LIT
             | cons EXP EXP
-            | EXP.EXP
             | hd EXP
             | tl EXP
             | (EXP)
             | EXP = EXP
             | ID
-            | NAT
             | []
             | [ EXP LIST
+
+    LIST  ::= , EXP LIST
+            | ]
+          
+    LIT   ::= nil
+            | true
+            | false
+            | <LIT.LIT>
+            | NAT
             | @asgn
+            | @:=
             | @doAsgn
             | @while
             | @doWhile
@@ -53,15 +63,40 @@ The grammar below gives exactly the concrete syntax of this implementation:
             | @cons
             | @doCons
           
-    LIST  ::= , EXP LIST
-            | ]
-          
     NAT   ::= 0|[1-9][0-9]+
           
     ID    ::= [a-zA-Z_'][a-zA-Z0-9_']*
 
 ### Semantics
+The semantic function for while programs takes a while program and a tree,
+returning a tree. The result is the store value of y (the write variable) after
+evaluating the block with the initial store where x (the read variable) has
+value t (the input tree). The function is defined as follows:
 
+    P[[ . ]] : Program -> Tree -> Tree
+    P[[ n read x BLK write y ]] t = σ(y) where σ = [[ BLK ]]B [x -> t]
+
+The semantic function for blocks takes a block and an initial store, returning
+the store that results from the evaluation of the commands in the block with
+the initial store.
+
+    B[[ . ]] : Block -> Store -> Store
+    B[[ {} ]] σ = σ
+    B[[ { C1, C2, ..., CN } ]] σ = B[[ { C2, ...,CN } ]] ( C[[ C1 ]] σ )
+
+The semantic function for commands takes a command and an initial store,
+returning the store that results from the evaluation of the command the initial
+store.
+
+    C[[ . ]] : Command -> Store -> Store
+
+To evaluate an assignment, we insert a mapping for x into the store, such that
+the resulting store maps x to the result of evaluating the expression e in the
+initial store.
+
+    C[[ x := e ]] σ = σ[ x -> E[[ e ]] σ ]
+
+    TBC
 ### Instructions
 To run the project, you must first install cabal, and the alex and happy cabal
 packages. Once these are installed, cd into the repo and run
