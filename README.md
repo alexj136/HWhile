@@ -74,7 +74,7 @@ evaluating the block with the initial store where x (the read variable) has
 value t (the input tree). The function is defined as follows:
 
     P[[ . ]] : Program -> Tree -> Tree
-    P[[ n read x BLK write y ]] t = σ(y) where σ = [[ BLK ]]B [x -> t]
+    P[[ n read x BLK write y ]] t = σ(y) where σ = B[[ BLK ]] [x -> t]
 
 The semantic function for blocks takes a block and an initial store, returning
 the store that results from the evaluation of the commands in the block with
