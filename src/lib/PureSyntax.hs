@@ -194,24 +194,25 @@ showProgramTree e = case toHaskellList e of
     [x, blk, y] -> do
         xi     <- parseInt x
         yi     <- parseInt y
-        blkStr <- showBlockTree blk
-        return $ showStringsAsList [show xi, blkStr, show yi]
+        blkStr <- showBlockTree 1 blk
+        return $ showStringsAsListFmt 0 [show xi, blkStr, show yi]
     _ -> Nothing
 
-showBlockTree :: ETree -> Maybe String
-showBlockTree blk = do
-    comms <- sequence $ map showCommandTree $ toHaskellList blk
-    return $ "[" ++ (concat $ intersperse ", " $ comms) ++ "]"
+showBlockTree :: Int -> ETree -> Maybe String
+showBlockTree t blk = do
+    comms <- sequence $ map (showCommandTree (succ t)) $ toHaskellList blk
+    return $ showStringsAsListFmt t comms
 
-showCommandTree :: ETree -> Maybe String
-showCommandTree e = case toHaskellList e of
+showCommandTree :: Int -> ETree -> Maybe String
+showCommandTree t e = case toHaskellList e of
     [atomT, arg1, arg2] -> do
         atom  <- treeToAtom atomT
         case atom of
             AtomWhile -> do
                 exp <- showExpressionTree arg1
-                blk <- showBlockTree      arg2
-                return $ showStringsAsList [show atom, exp, blk]
+                blk <- showBlockTree (succ t) arg2
+                return $ showStringsAsListFmt t
+                    [((show atom) ++ ", " ++ exp), blk]
             AtomAsgn  -> do
                 var <- parseInt           arg1
                 exp <- showExpressionTree arg2
@@ -222,9 +223,10 @@ showCommandTree e = case toHaskellList e of
         case atom of
             AtomIf -> do
                 exp <- showExpressionTree arg1
-                bt  <- showBlockTree      arg2
-                bf  <- showBlockTree      arg3
-                return $ showStringsAsList [show atom, exp, bt, bf]
+                bt  <- showBlockTree (succ t) arg2
+                bf  <- showBlockTree (succ t) arg3
+                return $ showStringsAsListFmt t
+                    [((show atom) ++ ", " ++ exp), bt, bf]
             _ -> Nothing
     _ -> Nothing
 
@@ -242,7 +244,7 @@ showExpressionTree e = case toHaskellList e of
         atom  <- treeToAtom atomT
         case atom of
             AtomQuote -> return $ showStringsAsList [show atom, show ENil]
-            AtomVar   -> return $ showStringsAsList [show atom, show ENil]
+            AtomVar   -> return $ showStringsAsList [show atom, show 0   ]
             _         -> Nothing
     [atomT, arg] -> do
         atom  <- treeToAtom atomT
@@ -294,6 +296,18 @@ showListOf showFn = showStringsAsList . map showFn
 -- add square brackets around that
 showStringsAsList :: [String] -> String
 showStringsAsList ss = "[" ++ (concat $ intersperse ", " ss) ++ "]"
+
+-- showStringsAsList with one element per line and indentation
+showStringsAsListFmt :: Int -> [String] -> String
+showStringsAsListFmt t []     = "[]"
+showStringsAsListFmt t (s:[]) = "\n"
+    ++ (tabs t) ++ "[ " ++ s ++ "\n"
+    ++ (tabs t) ++ "]"
+showStringsAsListFmt t (s:ss) = "\n"
+    ++ (tabs t) ++ "[ " ++ s ++ "\n"
+    ++ (tabs t) ++ ", "
+        ++ (concat $ intersperse ("\n" ++ (tabs t) ++ ", ") ss) ++ "\n"
+    ++ (tabs t) ++ "]"
 
 -- Convert a list of Expressions into a single list expression
 expFromHaskellList :: [Expression] -> Expression
