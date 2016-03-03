@@ -107,17 +107,60 @@ Command line input must conform to the following grammar:
             | ]
 
 ### Instructions
-To run the project, you must first install cabal, and the alex and happy cabal
-packages. Once these are installed, cd into the repo and run
+## Installing Prerequisites
+You will need GHC (the Haskell compiler) and Cabal (the Haskell build system)
+installed on your machine in order to compile & run HWhile.
+# Windows/Mac
+GHC and Cabal are included in the
+[Haskell Platform](http://www.haskell.org/platform/) which you should download
+and install.
+# Linux
+As with Windows and Mac, you can download and install the
+[Haskell Platform](http://www.haskell.org/platform/), however it is recommended
+to install GHC (the haskell compiler) and Cabal (Haskell's build system) from
+your distribution's repositories. For Debian/Ubuntu-based Distros, run:
 
+    sudo apt-get install haskell-platform
+
+For Arch Linux, run:
+
+    sudo pacman -S ghc cabal-install
+
+## Compilation
+To compile HWhile, first download HWhile (either using `git clone` or by
+clicking the 'Download ZIP' button on HWhile's
+[Github Page](https://github.com/alexj136/hwhile). Extract the downloaded files
+(if necessary).
+
+Next, `cd` into the root directory of the repository, and run the following
+commands:
+
+    cabal configure
     cabal build
 
-to compile the package. The executable will be output to
+These commands will download the required libraries (if necessary), and
+compile HWhile. If this fails, try running
 
-    dist/build/hwhile/hwhile
+    cabal install --only-dependencies
 
-and can therefore be run with the command:
+and then run `cabal build` again.
 
-    ./dist/build/hwhile/hwhile <FLAG> <FILE> <EXPR>
+## Invocation
+Compiling HWhile generates an executable file in the following directory:
 
-when at the root directory of the repo.
+    dist/build/hwhile/hwhile        ( on Mac & Linux )
+    dist/build/hwhile/hwhile.exe    ( on Windows     )
+
+relative to the root directory of the repository. It can then be run with the
+command:
+
+    ./dist/build/hwhile/hwhile <FLAG> <FILE> <EXPR>        ( Mac & Linux )
+    ./dist/build/hwhile/hwhile.exe <FLAG> <FILE> <EXPR>    ( Windows     )
+
+For example:
+
+    ./dist/build/hwhile/hwhile -i examples/count.while "[1, 2, 3]"         ( Mac & Linux )
+    ./dist/build/hwhile/hwhile.exe -i examples/count.while "[1, 2, 3]"     ( Windows     )
+
+This example takes a list of numbers as its argument and outputs their sum, so
+you should see `6` as the output.
