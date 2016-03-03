@@ -107,14 +107,14 @@ Command line input must conform to the following grammar:
             | ]
 
 ### Instructions
-## Installing Prerequisites
+#### Installing Prerequisites
 You will need GHC (the Haskell compiler) and Cabal (the Haskell build system)
 installed on your machine in order to compile & run HWhile.
-# Windows/Mac
+##### Windows/Mac
 GHC and Cabal are included in the
 [Haskell Platform](http://www.haskell.org/platform/) which you should download
 and install.
-# Linux
+##### Linux
 As with Windows and Mac, you can download and install the
 [Haskell Platform](http://www.haskell.org/platform/), however it is recommended
 to install GHC (the haskell compiler) and Cabal (Haskell's build system) from
@@ -126,7 +126,7 @@ For Arch Linux, run:
 
     sudo pacman -S ghc cabal-install
 
-## Compilation
+#### Compilation
 To compile HWhile, first download HWhile (either using `git clone` or by
 clicking the 'Download ZIP' button on HWhile's
 [Github Page](https://github.com/alexj136/hwhile). Extract the downloaded files
@@ -145,7 +145,7 @@ compile HWhile. If this fails, try running
 
 and then run `cabal build` again.
 
-## Invocation
+#### Invocation
 Compiling HWhile generates an executable file in the following directory:
 
     dist/build/hwhile/hwhile        ( on Mac & Linux )
