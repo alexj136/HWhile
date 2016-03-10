@@ -8,21 +8,17 @@ import qualified Parser          as P
 import qualified PureSyntax      as PS
 import qualified SugarSyntax     as SS
 import qualified PureInterpreter as I
-import qualified HWhileUtils     as H
+import qualified Desugar         as D
 
-loadProg :: FilePath -> IO PS.Program
-loadProg fileName = do
-    fileMap <- H.buildFileMap "examples" M.empty (S.singleton fileName)
-    return $ SS.desugarProg fileMap (fileMap M.! fileName)
-
-addProg, countProg, equalsProg, numberProg, xorProg :: IO PS.Program
-addProg    = loadProg "add"
-countProg  = loadProg "count"
-equalsProg = loadProg "equals"
-numberProg = loadProg "number"
-xorProg    = loadProg "xor"
-macroProg  = loadProg "macro"
-casesProg  = loadProg "cases"
+addProg, countProg, equalsProg, numberProg, xorProg, macroProg, casesProg
+    :: IO PS.Program
+addProg    = do { (_, p) <- D.loadProg "examples" "add"    [] 0 ; return p }
+countProg  = do { (_, p) <- D.loadProg "examples" "count"  [] 0 ; return p }
+equalsProg = do { (_, p) <- D.loadProg "examples" "equals" [] 0 ; return p }
+numberProg = do { (_, p) <- D.loadProg "examples" "number" [] 0 ; return p }
+xorProg    = do { (_, p) <- D.loadProg "examples" "xor"    [] 0 ; return p }
+macroProg  = do { (_, p) <- D.loadProg "examples" "macro"  [] 0 ; return p }
+casesProg  = do { (_, p) <- D.loadProg "examples" "cases"  [] 0 ; return p }
 
 -- Run a program obtained through IO with the given input, and compare the
 -- output with a given expression
@@ -31,8 +27,8 @@ testRun argumentString ioProg expectedResultString = do
     prog <- ioProg
     return (I.evalProg argumentExpr prog == expectedRes)
     where
-        argumentExpr = P.parseLVal (L.scan "+TEST+" argumentString)
-        expectedRes  = P.parseLVal (L.scan "+TEST+" expectedResultString)
+        argumentExpr = P.parseLVal (L.scan argumentString       "+TEST+")
+        expectedRes  = P.parseLVal (L.scan expectedResultString "+TEST+")
 
 test :: String -> IO Bool -> IO (String, Bool)
 test desc ioRes = do

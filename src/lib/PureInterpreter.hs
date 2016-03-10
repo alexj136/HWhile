@@ -17,7 +17,7 @@ type Store = M.Map Name ETree
 -- store that contains the read variable with the value of the input, and
 -- output (or 'write') the value of the write-variable in the resulting store.
 evalProg :: ETree -> Program -> ETree
-evalProg input (Program rd blk wrt) = M.findWithDefault ENil wrt store
+evalProg input (Program _ rd blk wrt) = M.findWithDefault ENil wrt store
     where store = evalBlock (M.singleton rd input) blk
 
 -- To evaluate an empty block, just return the input store. To evaluate a non-

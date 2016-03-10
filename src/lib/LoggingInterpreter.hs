@@ -10,7 +10,7 @@ import qualified PureInterpreter as I
 import qualified Data.Map as M
 
 evalProg :: (ETree -> String) -> ETree -> Program -> IO ETree
-evalProg showFunction input (Program rd blk wrt) = do
+evalProg showFunction input (Program _ rd blk wrt) = do
     store <- evalBlock showFunction (M.singleton rd input) blk
     return $ M.findWithDefault ENil wrt store
 
@@ -37,4 +37,9 @@ evalComm showFunction store comm = case comm of
 
 displayAssignment :: (ETree -> String) -> Name -> ETree -> String
 displayAssignment showFunction (Name (fp, n)) tree =
-    concat $ ["(", fp, ") ", n, " := ", showFunction tree]
+    concat $ ["(", untilPlus fp, ") ", n, " := ", showFunction tree]
+    where
+    untilPlus :: String -> String
+    untilPlus []         = []
+    untilPlus ('+' : cs) = []
+    untilPlus (c   : cs) = c : untilPlus cs

@@ -6,11 +6,13 @@ import System.Environment (getArgs)
 import System.FilePath
 import Data.List (intersperse)
 import qualified PureSyntax         as PS
+import Lexer (scan)
+import Parser (parseLVal)
 import SugarSyntax
+import Desugar
 import qualified PureInterpreter    as I
 import qualified LoggingInterpreter as LI
 import Unparser
-import HWhileUtils
 
 noArgsMessage :: String
 noArgsMessage = "No arguments supplied. Run 'hwhile -h' for help."
@@ -125,9 +127,7 @@ doUnparse mainFile =
     let mainFileDir      = takeDirectory mainFile
         mainFileBaseName = takeBaseName mainFile
     in do
-        fileMap <- buildFileMap mainFileDir M.empty $
-            S.singleton mainFileBaseName
-        let prog = desugarProg fileMap (fileMap M.! mainFileBaseName)
+        (_, prog) <- loadProg mainFileDir mainFileBaseName [] 0
         maybe (putStrLn "E") putStrLn (PS.showProgramTree (unparse prog))
 
 doRun :: Maybe String -> FilePath -> String -> IO ()
@@ -135,9 +135,22 @@ doRun flagStr mainFile argStr =
     let mainFileDir      = takeDirectory mainFile
         mainFileBaseName = takeBaseName mainFile
     in case getShowFunctionAndInterpreterFunction flagStr of
-        Nothing           -> putStrLn badArgsMessage
+        Nothing -> putStrLn badArgsMessage
         Just (showFunction, interpreterFunction) -> do
-            fileMap <- buildFileMap mainFileDir M.empty $
-                S.singleton mainFileBaseName
-            result  <- runFromParts mainFileBaseName fileMap argStr interpreterFunction
+            result <- runFromParts mainFileDir mainFileBaseName argStr
+                interpreterFunction
             putStrLn $ showFunction $ result
+
+-- Run a program given the search path, file path, argument string and
+-- interpreting function
+runFromParts ::
+    FilePath                                -> -- The search path file
+    FilePath                                -> -- The main file to run
+    String                                  -> -- The argument string
+    (PS.ETree -> PS.Program -> IO PS.ETree) -> -- The interpreting function
+    IO PS.ETree                                -- The result of the execution
+runFromParts dir fileBaseName argStr interpret = do
+    (_, prog) <- loadProg dir fileBaseName [] 0
+    let argTokens  = scan argStr "+IMPL+"
+    let argTree    = parseLVal argTokens
+    interpret argTree prog

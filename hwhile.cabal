@@ -25,11 +25,11 @@ library
   exposed-modules:      Lexer,
                         Parser,
                         SugarSyntax,
+                        Desugar,
                         PureSyntax,
                         PureInterpreter,
                         LoggingInterpreter,
-                        Unparser,
-                        HWhileUtils
+                        Unparser
 
 executable hwhile
   default-language:     Haskell2010

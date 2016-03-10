@@ -15,9 +15,12 @@ nameName (Name (_, s)) = s
 namePath :: Name -> FilePath
 namePath (Name (f, _)) = f
 
-data Program
-    = Program Name Block Name
-    deriving (Eq, Ord)
+data Program = Program
+    { progName :: Name
+    , readVar  :: Name
+    , block    :: Block
+    , writeVar :: Name
+    } deriving (Eq, Ord)
 
 type Block = [Command]
 
@@ -43,7 +46,7 @@ instance Show Name where
     show (Name (fp, x)) = x
 
 instance Show Program where
-    show (Program n b w) = "read " ++ (show n) ++ " "
+    show (Program n r b w) = (show n) ++ "read " ++ (show r) ++ " "
                         ++ (showBlock 0 b) ++ "write " ++ (show w)
 
 instance Show Command where

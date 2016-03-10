@@ -69,9 +69,7 @@ import SugarSyntax
 %%
 
 PROGRAM :: { SuProgram }
-PROGRAM : VAR Read VAR BLOCK Write VAR {
-              if namePath $1 == nameName $1 then SuProgram $3 $4 $6
-              else error $ "Program name must match the file prefix." }
+PROGRAM : VAR Read VAR BLOCK Write VAR { SuProgram $1 $3 $4 $6 }
 
 VAR :: { Name }
 VAR : Var { Name (tkPath $1, tkVarName $1) }

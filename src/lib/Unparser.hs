@@ -21,7 +21,7 @@ type VarMap = M.Map Name Int
 
 -- Create a VarMap for the given Program
 varMapProg :: Program -> VarMap
-varMapProg (Program rd blk wrt) =
+varMapProg (Program _ rd blk wrt) =
     varMapName (varMapBlock (M.singleton rd 0) blk) wrt
 
 -- Extend the given VarMap with variables in the given Block
@@ -55,7 +55,7 @@ varMapName vm n | M.member n vm = vm
 --------------------------------------------------------------------------------
 
 unparseProg :: VarMap -> Program -> ETree
-unparseProg vm (Program x b y) =
+unparseProg vm (Program _ x b y) =
     treeFromHaskellList [unparseName vm x, unparseBlock vm b, unparseName vm y]
 
 unparseBlock :: VarMap -> Block -> ETree
@@ -119,8 +119,8 @@ unparseName vm n = maybe (error "Unparse VarMap miss") intToTree (M.lookup n vm)
 
 -- To remove equality from a program, remove it from the block
 removeEquality :: VarMap -> Program -> (VarMap, Program)
-removeEquality vm (Program x blk y) =
-    let (vmB, rBlk) = removeEqualityBlock vm blk in (vmB, Program x rBlk y)
+removeEquality vm (Program n x blk y) =
+    let (vmB, rBlk) = removeEqualityBlock vm blk in (vmB, Program n x rBlk y)
 
 -- To remove equality from a block, remove it from each command in the block
 removeEqualityBlock :: VarMap -> Block -> (VarMap, Block)
