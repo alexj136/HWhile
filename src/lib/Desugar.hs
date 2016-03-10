@@ -48,7 +48,7 @@ desugarComm dir macroStack macroNum suComm = case suComm of
     SuAssign x exp -> return ( macroNum, [ Assign x exp ] )
     SuWhile gd blk -> do
         ( macroNum' , desugaredBlk ) <- desugarBlock dir macroStack macroNum blk
-        return ( macroNum , [ While gd desugaredBlk ] )
+        return ( macroNum' , [ While gd desugaredBlk ] )
     SuIfElse gd bt bf -> do
         ( macroNum'  , desugaredBT ) <- desugarBlock dir macroStack macroNum  bt
         ( macroNum'' , desugaredBF ) <- desugarBlock dir macroStack macroNum' bf
