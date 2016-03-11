@@ -26,20 +26,23 @@ loadProg dir fileBaseName macroStack =
         error "Recursive macros detected."
     else do
         fileStr <- readFile $ dir ++ pathSeparator : fileBaseName ++ ".while"
-        let fileTokens = scan fileStr fileBaseName
-        let suProg     = parseProg fileTokens
+        let fileTokens  = scan fileStr fileBaseName
+        let suProg      = parseProg fileTokens
         case suProg of
             SuProgram n _ _ _ | nameName n /= fileBaseName -> error $
                 "Program name (" ++ nameName n ++ ") must match file base name."
-            _ -> desugarProg dir ( fileBaseName : macroStack ) suProg
+            SuProgram n r b w ->
+                let namesToInit = S.delete r $ S.insert w $ namesSuBlock b
+                    initCode    = map (\n -> SuAssign n (Lit ENil)) $
+                        S.toList namesToInit
+                in desugarProg dir ( fileBaseName : macroStack )
+                    (SuProgram n r (initCode ++ b) w)
 
 -- Desugar a program, that is, convert it to pure while syntax
 desugarProg :: FilePath -> [FilePath] -> SuProgram -> IO Program
 desugarProg dir macroStack ( SuProgram n r blk w ) = do
     desugaredBlk <- desugarBlock dir macroStack blk
-    let namesToInit = S.delete r $ S.insert w $ namesBlock desugaredBlk
-    let initCode    = map (\n -> Assign n (Lit ENil)) $ S.toList namesToInit
-    return $ Program n r (initCode ++ desugaredBlk) w
+    return $ Program n r desugaredBlk w
 
 -- Desugar a block
 desugarBlock :: FilePath -> [FilePath] -> SuBlock -> IO Block

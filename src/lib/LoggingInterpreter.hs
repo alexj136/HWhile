@@ -37,9 +37,4 @@ evalComm showFunction store comm = case comm of
 
 displayAssignment :: (ETree -> String) -> Name -> ETree -> String
 displayAssignment showFunction (Name (fp, n)) tree =
-    concat $ ["(", untilPlus fp, ") ", n, " := ", showFunction tree]
-    where
-    untilPlus :: String -> String
-    untilPlus []         = []
-    untilPlus ('+' : cs) = []
-    untilPlus (c   : cs) = c : untilPlus cs
+    concat $ ["(", fp, ") ", n, " := ", showFunction tree]
