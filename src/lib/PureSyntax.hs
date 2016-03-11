@@ -1,6 +1,7 @@
 module PureSyntax where
 
 import qualified Data.Map as M
+import qualified Data.Set as S
 import Data.List (intersperse)
 
 -- Syntax definitions for while programs. The data types below match the
@@ -116,6 +117,31 @@ instance Show Atom where
         AtomDoTl    -> "@doTl"
         AtomCons    -> "@cons"
         AtomDoCons  -> "@doCons"
+
+--------------------------------------------------------------------------------
+-- Name enumeration functions
+--------------------------------------------------------------------------------
+
+namesProg :: Program -> S.Set Name
+namesProg (Program n r b w) = foldr S.insert (namesBlock b) [n, r, w]
+
+namesBlock :: Block -> S.Set Name
+namesBlock = S.unions . map namesComm
+
+namesComm :: Command -> S.Set Name
+namesComm comm = case comm of
+    Assign n e     -> S.insert n (namesExpr e)
+    While  e b     -> S.union (namesExpr e) (namesBlock b)
+    IfElse e bt bf -> S.unions [namesExpr e, namesBlock bt, namesBlock bf]
+
+namesExpr :: Expression -> S.Set Name
+namesExpr expr = case expr of
+    Var  n     -> S.singleton n
+    Lit  _     -> S.empty
+    Cons e1 e2 -> S.union (namesExpr e1) (namesExpr e2)
+    Hd   e     -> namesExpr e
+    Tl   e     -> namesExpr e
+    IsEq e1 e2 -> S.union (namesExpr e1) (namesExpr e2)
 
 --------------------------------------------------------------------------------
 -- Syntax Conversion & Showing Functions

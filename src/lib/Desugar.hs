@@ -1,5 +1,6 @@
 module Desugar ( loadProg , desugarProg ) where
 
+import qualified Data.Set as S
 import System.FilePath (pathSeparator)
 import Parser (parseProg)
 import Lexer (scan)
@@ -36,7 +37,9 @@ loadProg dir fileBaseName macroStack =
 desugarProg :: FilePath -> [FilePath] -> SuProgram -> IO Program
 desugarProg dir macroStack ( SuProgram n r blk w ) = do
     desugaredBlk <- desugarBlock dir macroStack blk
-    return $ Program n r desugaredBlk w
+    let namesToInit = S.delete r $ S.insert w $ namesBlock desugaredBlk
+    let initCode    = map (\n -> Assign n (Lit ENil)) $ S.toList namesToInit
+    return $ Program n r (initCode ++ desugaredBlk) w
 
 -- Desugar a block
 desugarBlock :: FilePath -> [FilePath] -> SuBlock -> IO Block
