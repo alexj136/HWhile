@@ -12,13 +12,13 @@ import qualified Desugar         as D
 
 addProg, countProg, equalsProg, numberProg, xorProg, macroProg, casesProg
     :: IO PS.Program
-addProg    = do { (_, p) <- D.loadProg "examples" "add"    [] 0 ; return p }
-countProg  = do { (_, p) <- D.loadProg "examples" "count"  [] 0 ; return p }
-equalsProg = do { (_, p) <- D.loadProg "examples" "equals" [] 0 ; return p }
-numberProg = do { (_, p) <- D.loadProg "examples" "number" [] 0 ; return p }
-xorProg    = do { (_, p) <- D.loadProg "examples" "xor"    [] 0 ; return p }
-macroProg  = do { (_, p) <- D.loadProg "examples" "macro"  [] 0 ; return p }
-casesProg  = do { (_, p) <- D.loadProg "examples" "cases"  [] 0 ; return p }
+addProg    = D.loadProg "examples" "add"    []
+countProg  = D.loadProg "examples" "count"  []
+equalsProg = D.loadProg "examples" "equals" []
+numberProg = D.loadProg "examples" "number" []
+xorProg    = D.loadProg "examples" "xor"    []
+macroProg  = D.loadProg "examples" "macro"  []
+casesProg  = D.loadProg "examples" "cases"  []
 
 -- Run a program obtained through IO with the given input, and compare the
 -- output with a given expression

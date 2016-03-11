@@ -10,60 +10,65 @@ import SugarSyntax
 -- program from disk, returning it with the macro seed after unparsing etc.
 -- Also check for macro recursion or non-matching file+prog names, failing if
 -- either is found.
-loadProg :: FilePath -> FilePath -> [FilePath] -> Int -> IO (Int, Program)
-loadProg dir fileBaseName macroStack macroNum =
+loadProg ::
+    FilePath   -> -- The directory we look for files to open
+    FilePath   -> -- The file we want to load
+    [FilePath] -> -- The 'macro stack'. Prevents recursion thusly: every time we
+                  -- recurse into loading a new macro, we push the name of the
+                  -- previous macro on the stack, and then check that the
+                  -- new macro is not already somewhere on the stack. If it is,
+                  -- we've found recursion so we quit. Otherwise, we pop the
+                  -- current macro off the stack when we finish it.
+    IO Program    -- The loaded program
+loadProg dir fileBaseName macroStack =
     if fileBaseName `elem` macroStack then
         error "Recursive macros detected."
     else do
         fileStr <- readFile $ dir ++ pathSeparator : fileBaseName ++ ".while"
-        let fileTokens = scan fileStr ( fileBaseName ++ "+" ++ show macroNum )
+        let fileTokens = scan fileStr fileBaseName
         let suProg     = parseProg fileTokens
         case suProg of
             SuProgram n _ _ _ | nameName n /= fileBaseName -> error $
                 "Program name (" ++ nameName n ++ ") must match file base name."
-            _ -> desugarProg dir ( fileBaseName : macroStack ) macroNum suProg
+            _ -> desugarProg dir ( fileBaseName : macroStack ) suProg
 
 -- Desugar a program, that is, convert it to pure while syntax
-desugarProg :: FilePath -> [FilePath] -> Int -> SuProgram -> IO (Int, Program)
-desugarProg dir macroStack macroNum ( SuProgram n r blk w ) = do
-    ( macroNum' , desugaredBlk ) <- desugarBlock dir macroStack macroNum blk
-    return ( macroNum' , Program n r desugaredBlk w )
+desugarProg :: FilePath -> [FilePath] -> SuProgram -> IO Program
+desugarProg dir macroStack ( SuProgram n r blk w ) = do
+    desugaredBlk <- desugarBlock dir macroStack blk
+    return $ Program n r desugaredBlk w
 
 -- Desugar a block
-desugarBlock :: FilePath -> [FilePath] -> Int -> SuBlock -> IO (Int, Block)
-desugarBlock dir _              macroNum []         = return ( macroNum , [] )
-desugarBlock dir macroStack macroNum ( c : cs ) = do
-    ( macroNum'  , desugaredC  ) <- desugarComm  dir macroStack macroNum  c
-    ( macroNum'' , desugaredCs ) <- desugarBlock dir macroStack macroNum' cs
-    return ( macroNum'' , desugaredC ++ desugaredCs )
+desugarBlock :: FilePath -> [FilePath] -> SuBlock -> IO Block
+desugarBlock dir _          []         = return []
+desugarBlock dir macroStack ( c : cs ) = do
+    desugaredC  <- desugarComm  dir macroStack c
+    desugaredCs <- desugarBlock dir macroStack cs
+    return $ desugaredC ++ desugaredCs
 
 -- Desugar a command
 desugarComm ::
     FilePath   -> -- Path to search for macro files
     [FilePath] -> -- Macro call stack
-    Int        -> -- Seed for names
     SuCommand  -> -- The command to desugar
-    IO (Int, Block)
-desugarComm dir macroStack macroNum suComm = case suComm of
-    SuAssign x exp -> return ( macroNum, [ Assign x exp ] )
+    IO Block
+desugarComm dir macroStack suComm = case suComm of
+    SuAssign x exp -> return [ Assign x exp ]
     SuWhile gd blk -> do
-        ( macroNum' , desugaredBlk ) <- desugarBlock dir macroStack macroNum blk
-        return ( macroNum' , [ While gd desugaredBlk ] )
+        desugaredBlk <- desugarBlock dir macroStack blk
+        return [ While gd desugaredBlk ]
     SuIfElse gd bt bf -> do
-        ( macroNum'  , desugaredBT ) <- desugarBlock dir macroStack macroNum  bt
-        ( macroNum'' , desugaredBF ) <- desugarBlock dir macroStack macroNum' bf
-        return ( macroNum'' , [ IfElse gd desugaredBT desugaredBF ] )
+        desugaredBT <- desugarBlock dir macroStack bt
+        desugaredBF <- desugarBlock dir macroStack bf
+        return [ IfElse gd desugaredBT desugaredBF ]
     Macro x f e -> do
-        ( macroNum' , prog ) <- loadProg dir f macroStack ( succ macroNum )
-        return ( macroNum' ,
+        prog <- loadProg dir f macroStack
+        return $
             [ Assign ( readVar prog ) e ] ++
             block prog ++
-            [ Assign x ( Var ( writeVar prog ) ) ] )
-    Switch e [] def -> desugarBlock dir macroStack macroNum def
+            [ Assign x ( Var ( writeVar prog ) ) ]
+    Switch e [] def -> desugarBlock dir macroStack def
     Switch e ( ( matchE , blk ) : cases ) def -> do
-        ( macroNum'  , desugaredBlk  ) <-
-            desugarBlock dir macroStack macroNum blk
-        ( macroNum'' , desugaredRest ) <-
-            desugarComm  dir macroStack macroNum' ( Switch e cases def )
-        return ( macroNum'' ,
-            [ IfElse ( IsEq e matchE ) desugaredBlk desugaredRest ] )
+        desugaredBlk  <- desugarBlock dir macroStack blk
+        desugaredRest <- desugarComm  dir macroStack ( Switch e cases def )
+        return [ IfElse ( IsEq e matchE ) desugaredBlk desugaredRest ]

@@ -88,7 +88,7 @@ getShowFunctionAndInterpreterFunction flagStr = case flagStr of
     Just "-liv"  -> Just (PS.showIntListTree True                            , \t p -> return (I.evalProg t p))
     Just "-L"    -> Just (PS.showNestedIntListTree                           , \t p -> return (I.evalProg t p))
     Just "-La"   -> Just (PS.showNestedAtomIntListTree                       , \t p -> return (I.evalProg t p))
-    Just "-d"   ->  let sfn = show                                               in Just (sfn, LI.evalProg sfn)
+    Just "-d"    -> let sfn = show                                               in Just (sfn, LI.evalProg sfn)
     Just "-di"   -> let sfn = \tree -> maybe "E" show $ PS.parseInt tree         in Just (sfn, LI.evalProg sfn)
     Just "-div"  -> let sfn = \tree -> maybe (show tree) show $ PS.parseInt tree in Just (sfn, LI.evalProg sfn)
     Just "-dl"   -> let sfn = show . PS.toHaskellList                            in Just (sfn, LI.evalProg sfn)
@@ -127,7 +127,7 @@ doUnparse mainFile =
     let mainFileDir      = takeDirectory mainFile
         mainFileBaseName = takeBaseName mainFile
     in do
-        (_, prog) <- loadProg mainFileDir mainFileBaseName [] 0
+        prog <- loadProg mainFileDir mainFileBaseName []
         maybe (putStrLn "E") putStrLn (PS.showProgramTree (unparse prog))
 
 doRun :: Maybe String -> FilePath -> String -> IO ()
@@ -150,7 +150,7 @@ runFromParts ::
     (PS.ETree -> PS.Program -> IO PS.ETree) -> -- The interpreting function
     IO PS.ETree                                -- The result of the execution
 runFromParts dir fileBaseName argStr interpret = do
-    (_, prog) <- loadProg dir fileBaseName [] 0
+    prog <- loadProg dir fileBaseName []
     let argTokens  = scan argStr "+IMPL+"
     let argTree    = parseLVal argTokens
     interpret argTree prog
