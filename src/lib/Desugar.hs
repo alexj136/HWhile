@@ -28,15 +28,17 @@ loadProg dir fileBaseName macroStack =
         fileStr <- readFile $ dir ++ pathSeparator : fileBaseName ++ ".while"
         let fileTokens  = scan fileStr fileBaseName
         let suProg      = parseProg fileTokens
-        case suProg of
-            SuProgram n _ _ _ | nameName n /= fileBaseName -> error $
+        case (suProg, macroStack) of
+            ( SuProgram n _ _ _ , _  ) | nameName n /= fileBaseName -> error $
                 "Program name (" ++ nameName n ++ ") must match file base name."
-            SuProgram n r b w ->
+            ( _                 , [] ) ->
+                desugarProg dir ( fileBaseName : macroStack ) suProg
+            ( SuProgram n r b w , _  ) ->
                 let namesToInit = S.delete r $ S.insert w $ namesSuBlock b
-                    initCode    = map (\n -> SuAssign n (Lit ENil)) $
+                    initCode    = map ( \n -> SuAssign n ( Lit ENil ) ) $
                         S.toList namesToInit
                 in desugarProg dir ( fileBaseName : macroStack )
-                    (SuProgram n r (initCode ++ b) w)
+                    ( SuProgram n r ( initCode ++ b ) w )
 
 -- Desugar a program, that is, convert it to pure while syntax
 desugarProg :: FilePath -> [FilePath] -> SuProgram -> IO Program
