@@ -2,7 +2,7 @@ module Desugar ( loadProg , desugarProg ) where
 
 import qualified Data.Set as S
 import System.FilePath (pathSeparator)
-import Parser (parseProg)
+import SourceParser (parseProg)
 import Lexer (scan)
 import PureSyntax
 import SugarSyntax

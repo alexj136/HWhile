@@ -1,5 +1,5 @@
 {
-module Parser where
+module SourceParser where
 
 import Lexer
 import PureSyntax

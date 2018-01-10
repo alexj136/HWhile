@@ -7,7 +7,7 @@ import System.FilePath
 import Data.List (intersperse)
 import qualified PureSyntax         as PS
 import Lexer (scan)
-import Parser (parseLVal)
+import SourceParser (parseLVal)
 import SugarSyntax
 import Desugar
 import qualified PureInterpreter    as I

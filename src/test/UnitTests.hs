@@ -4,7 +4,7 @@ import qualified Data.Map        as M
 import qualified Data.Set        as S
 import System.Exit
 import qualified Lexer           as L
-import qualified Parser          as P
+import qualified SourceParser    as SP
 import qualified PureSyntax      as PS
 import qualified SugarSyntax     as SS
 import qualified PureInterpreter as I
@@ -27,8 +27,8 @@ testRun argumentString ioProg expectedResultString = do
     prog <- ioProg
     return (I.evalProg argumentExpr prog == expectedRes)
     where
-        argumentExpr = P.parseLVal (L.scan argumentString       "+TEST+")
-        expectedRes  = P.parseLVal (L.scan expectedResultString "+TEST+")
+        argumentExpr = SP.parseLVal (L.scan argumentString       "+TEST+")
+        expectedRes  = SP.parseLVal (L.scan expectedResultString "+TEST+")
 
 test :: String -> IO Bool -> IO (String, Bool)
 test desc ioRes = do
