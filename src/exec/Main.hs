@@ -9,7 +9,8 @@ import qualified PureSyntax         as PS
 import Lexer (scan)
 import SourceParser (parseLVal)
 import SugarSyntax
-import Desugar
+import DesugarSI
+import qualified DesugarIP          as IP
 import qualified PureInterpreter    as I
 import qualified LoggingInterpreter as LI
 import Unparser
@@ -128,7 +129,7 @@ doUnparse mainFile =
         mainFileBaseName = takeBaseName mainFile
     in do
         prog <- loadProg mainFileDir mainFileBaseName []
-        maybe (putStrLn "E") putStrLn (PS.showProgramTree (unparse prog))
+        maybe (putStrLn "E") putStrLn (PS.showProgramTree (unparse (IP.desugarProg prog)))
 
 doRun :: Maybe String -> FilePath -> String -> IO ()
 doRun flagStr mainFile argStr =
@@ -153,4 +154,4 @@ runFromParts dir fileBaseName argStr interpret = do
     prog <- loadProg dir fileBaseName []
     let argTokens  = scan argStr "+IMPL+"
     let argTree    = parseLVal argTokens
-    interpret argTree prog
+    interpret argTree (IP.desugarProg prog)

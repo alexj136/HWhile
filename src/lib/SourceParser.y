@@ -109,12 +109,18 @@ RESTEXPLIST : Comma EXPR RESTEXPLIST { $2 : $3 }
             | ClosSqu                { []      }
 
 COMMAND :: { SuCommand }
-COMMAND : VAR Assign EXPR                     { SuAssign $1 $3              }
-        | VAR Assign OpenAng VAR ClosAng EXPR { Macro $1 (nameName $4) $6   }
-        | While EXPR BLOCK                    { SuWhile $2 $3               }
-        | If EXPR BLOCK Else BLOCK            { SuIfElse $2 $3 $5           }
-        | If EXPR BLOCK                       { SuIfElse $2 $3 []           }
-        | Switch EXPR OpenCur SWITCHCONT      { Switch $2 (fst $4) (snd $4) }
+COMMAND : VAR Assign EXPR
+            { SuAssign (Info (tkPath $2, tkLineNo $2)) $1 $3                }
+        | VAR Assign OpenAng VAR ClosAng EXPR
+            { Macro    (Info (tkPath $2, tkLineNo $2)) $1 (nameName $4) $6  }
+        | While EXPR BLOCK
+            { SuWhile  (Info (tkPath $1, tkLineNo $1)) $2 $3                }
+        | If EXPR BLOCK Else BLOCK
+            { SuIfElse (Info (tkPath $1, tkLineNo $1)) $2 $3 $5             }
+        | If EXPR BLOCK
+            { SuIfElse (Info (tkPath $1, tkLineNo $1)) $2 $3 []             }
+        | Switch EXPR OpenCur SWITCHCONT
+            { Switch   (Info (tkPath $1, tkLineNo $1)) $2 (fst $4) (snd $4) }
 
 BLOCK :: { SuBlock }
 BLOCK : OpenCur      ClosCur { [] }

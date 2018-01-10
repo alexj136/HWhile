@@ -12,14 +12,16 @@ data SuProgram = SuProgram Name Name SuBlock Name deriving Eq
  
 type SuBlock = [SuCommand]
 
+newtype Info = Info (FilePath, Int) deriving (Show, Eq, Ord)
+
 -- The sugared command syntax - has conditionals, macros and switches in
 -- addition to the pure syntax commands.
 data SuCommand
-    = SuAssign Name Expression
-    | SuWhile Expression SuBlock
-    | SuIfElse Expression SuBlock SuBlock
-    | Macro Name FilePath Expression
-    | Switch Expression [(Expression, SuBlock)] SuBlock
+    = SuAssign Info Name Expression
+    | SuWhile  Info Expression SuBlock
+    | SuIfElse Info Expression SuBlock SuBlock
+    | Macro    Info Name FilePath Expression
+    | Switch   Info Expression [(Expression, SuBlock)] SuBlock
     deriving (Show, Eq, Ord)
 
 namesSuProg :: SuProgram -> S.Set Name
@@ -30,11 +32,11 @@ namesSuBlock = S.unions . map namesSuComm
 
 namesSuComm :: SuCommand -> S.Set Name
 namesSuComm comm = case comm of
-    SuAssign n e     -> S.insert n (namesExpr e)
-    SuWhile  e b     -> S.union (namesExpr e) (namesSuBlock b)
-    SuIfElse e bt bf -> S.unions [namesExpr e, namesSuBlock bt, namesSuBlock bf]
-    Macro    n _  e  -> S.insert n (namesExpr e)
-    Switch   e eb b  -> S.unions
+    SuAssign _ n e     -> S.insert n (namesExpr e)
+    SuWhile  _ e b     -> S.union (namesExpr e) (namesSuBlock b)
+    SuIfElse _ e bt bf -> S.unions [namesExpr e, namesSuBlock bt, namesSuBlock bf]
+    Macro    _ n _  e  -> S.insert n (namesExpr e)
+    Switch   _ e eb b  -> S.unions
         [ namesExpr e
         , S.unions (map (\(e, b) -> S.union (namesExpr e) (namesSuBlock b)) eb)
         , namesSuBlock b

@@ -1,10 +1,11 @@
-module Desugar ( loadProg , desugarProg ) where
+module DesugarSI ( loadProg , desugarProg ) where
 
 import qualified Data.Set as S
 import System.FilePath (pathSeparator)
 import SourceParser (parseProg)
 import Lexer (scan)
 import PureSyntax
+import InterSyntax
 import SugarSyntax
 
 -- Given its directory, base name, a macro call stack and macro seed, load a
@@ -20,7 +21,7 @@ loadProg ::
                   -- new macro is not already somewhere on the stack. If it is,
                   -- we've found recursion so we quit. Otherwise, we pop the
                   -- current macro off the stack when we finish it.
-    IO Program    -- The loaded program
+    IO InProgram  -- The loaded program
 loadProg dir fileBaseName macroStack =
     if fileBaseName `elem` macroStack then
         error "Recursive macros detected."
@@ -35,19 +36,20 @@ loadProg dir fileBaseName macroStack =
                 desugarProg dir ( fileBaseName : macroStack ) suProg
             ( SuProgram n r b w , _  ) ->
                 let namesToInit = S.delete r $ S.insert w $ namesSuBlock b
-                    initCode    = map ( \n -> SuAssign n ( Lit ENil ) ) $
-                        S.toList namesToInit
+                    initCode    = map ( \n ->
+                            SuAssign ( Info ( "+IMPL+", 0 ) ) n ( Lit ENil ) )
+                        (S.toList namesToInit)
                 in desugarProg dir ( fileBaseName : macroStack )
                     ( SuProgram n r ( initCode ++ b ) w )
 
 -- Desugar a program, that is, convert it to pure while syntax
-desugarProg :: FilePath -> [FilePath] -> SuProgram -> IO Program
+desugarProg :: FilePath -> [FilePath] -> SuProgram -> IO InProgram
 desugarProg dir macroStack ( SuProgram n r blk w ) = do
     desugaredBlk <- desugarBlock dir macroStack blk
-    return $ Program n r desugaredBlk w
+    return $ InProgram n r desugaredBlk w
 
 -- Desugar a block
-desugarBlock :: FilePath -> [FilePath] -> SuBlock -> IO Block
+desugarBlock :: FilePath -> [FilePath] -> SuBlock -> IO InBlock
 desugarBlock dir _          []         = return []
 desugarBlock dir macroStack ( c : cs ) = do
     desugaredC  <- desugarComm  dir macroStack c
@@ -59,24 +61,26 @@ desugarComm ::
     FilePath   -> -- Path to search for macro files
     [FilePath] -> -- Macro call stack
     SuCommand  -> -- The command to desugar
-    IO Block
+    IO InBlock
 desugarComm dir macroStack suComm = case suComm of
-    SuAssign x exp -> return [ Assign x exp ]
-    SuWhile gd blk -> do
+    SuAssign i x exp -> return [ InAssign i x exp ]
+    SuWhile i gd blk -> do
         desugaredBlk <- desugarBlock dir macroStack blk
-        return [ While gd desugaredBlk ]
-    SuIfElse gd bt bf -> do
+        return [ InWhile i gd desugaredBlk ]
+    SuIfElse i gd bt bf -> do
         desugaredBT <- desugarBlock dir macroStack bt
         desugaredBF <- desugarBlock dir macroStack bf
-        return [ IfElse gd desugaredBT desugaredBF ]
-    Macro x f e -> do
+        return [ InIfElse i gd desugaredBT desugaredBF ]
+    Macro i x f e -> do
         prog <- loadProg dir f macroStack
         return $
-            [ Assign ( readVar prog ) e ] ++
-            block prog ++
-            [ Assign x ( Var ( writeVar prog ) ) ]
-    Switch e [] def -> desugarBlock dir macroStack def
-    Switch e ( ( matchE , blk ) : cases ) def -> do
-        desugaredBlk  <- desugarBlock dir macroStack blk
-        desugaredRest <- desugarComm  dir macroStack ( Switch e cases def )
-        return [ IfElse ( IsEq e matchE ) desugaredBlk desugaredRest ]
+            [ InAssign i ( inReadVar prog ) e ] ++
+            inBlock prog ++
+            [ InAssign i x ( Var ( inWriteVar prog ) ) ]
+    Switch i e cases def -> do
+        desugaredDef   <- desugarBlock dir macroStack def
+        desugaredCases <- sequence $ map ( \( matchE , blk ) -> do
+                desugaredBlk <- desugarBlock dir macroStack blk
+                return ( matchE , desugaredBlk )
+            ) cases
+        return $ [ InSwitch i e desugaredCases desugaredDef ]

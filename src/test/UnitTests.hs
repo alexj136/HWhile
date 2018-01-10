@@ -6,26 +6,28 @@ import System.Exit
 import qualified Lexer           as L
 import qualified SourceParser    as SP
 import qualified PureSyntax      as PS
+import qualified InterSyntax     as IS
 import qualified SugarSyntax     as SS
 import qualified PureInterpreter as I
-import qualified Desugar         as D
+import qualified DesugarSI       as SI
+import qualified DesugarIP       as IP
 
 addProg, countProg, equalsProg, numberProg, xorProg, macroProg, casesProg
-    :: IO PS.Program
-addProg    = D.loadProg "examples" "add"    []
-countProg  = D.loadProg "examples" "count"  []
-equalsProg = D.loadProg "examples" "equals" []
-numberProg = D.loadProg "examples" "number" []
-xorProg    = D.loadProg "examples" "xor"    []
-macroProg  = D.loadProg "examples" "macro"  []
-casesProg  = D.loadProg "examples" "cases"  []
+    :: IO IS.InProgram
+addProg    = SI.loadProg "examples" "add"    []
+countProg  = SI.loadProg "examples" "count"  []
+equalsProg = SI.loadProg "examples" "equals" []
+numberProg = SI.loadProg "examples" "number" []
+xorProg    = SI.loadProg "examples" "xor"    []
+macroProg  = SI.loadProg "examples" "macro"  []
+casesProg  = SI.loadProg "examples" "cases"  []
 
 -- Run a program obtained through IO with the given input, and compare the
 -- output with a given expression
-testRun :: String -> IO PS.Program -> String -> IO Bool
+testRun :: String -> IO IS.InProgram -> String -> IO Bool
 testRun argumentString ioProg expectedResultString = do
     prog <- ioProg
-    return (I.evalProg argumentExpr prog == expectedRes)
+    return (I.evalProg argumentExpr (IP.desugarProg prog) == expectedRes)
     where
         argumentExpr = SP.parseLVal (L.scan argumentString       "+TEST+")
         expectedRes  = SP.parseLVal (L.scan expectedResultString "+TEST+")
