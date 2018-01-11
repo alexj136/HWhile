@@ -1,12 +1,13 @@
 module DesugarSI ( loadProg , desugarProg ) where
 
-import qualified Data.Set as S
 import System.FilePath (pathSeparator)
 import SourceParser (parseProg)
 import Lexer (scan)
 import PureSyntax
 import InterSyntax
 import SugarSyntax
+import qualified Data.Set as S
+import Control.Monad.Except
 
 -- Given its directory, base name, a macro call stack and macro seed, load a
 -- program from disk, returning it with the macro seed after unparsing etc.
@@ -21,17 +22,19 @@ loadProg ::
                   -- new macro is not already somewhere on the stack. If it is,
                   -- we've found recursion so we quit. Otherwise, we pop the
                   -- current macro off the stack when we finish it.
-    IO InProgram  -- The loaded program
+    ExceptT String IO InProgram  -- The loaded program
 loadProg dir fileBaseName macroStack =
     if fileBaseName `elem` macroStack then
-        error "Recursive macros detected."
+        throwError "Recursive macros detected."
     else do
-        fileStr <- readFile $ dir ++ pathSeparator : fileBaseName ++ ".while"
+        fileStr <- lift $ readFile $
+            dir ++ pathSeparator : fileBaseName ++ ".while"
         let fileTokens  = scan fileStr fileBaseName
-        let suProg      = parseProg fileTokens
+        suProg <- parseProg fileTokens
         case (suProg, macroStack) of
-            ( SuProgram n _ _ _ , _  ) | nameName n /= fileBaseName -> error $
-                "Program name (" ++ nameName n ++ ") must match file base name."
+            ( SuProgram n _ _ _ , _  ) | nameName n /= fileBaseName ->
+                throwError $ "Program name (" ++ nameName n
+                    ++ ") must match file base name."
             ( _                 , [] ) ->
                 desugarProg dir ( fileBaseName : macroStack ) suProg
             ( SuProgram n r b w , _  ) ->
@@ -43,13 +46,14 @@ loadProg dir fileBaseName macroStack =
                     ( SuProgram n r ( initCode ++ b ) w )
 
 -- Desugar a program, that is, convert it to pure while syntax
-desugarProg :: FilePath -> [FilePath] -> SuProgram -> IO InProgram
+desugarProg :: FilePath -> [FilePath] -> SuProgram ->
+    ExceptT String IO InProgram
 desugarProg dir macroStack ( SuProgram n r blk w ) = do
     desugaredBlk <- desugarBlock dir macroStack blk
     return $ InProgram n r desugaredBlk w
 
 -- Desugar a block
-desugarBlock :: FilePath -> [FilePath] -> SuBlock -> IO InBlock
+desugarBlock :: FilePath -> [FilePath] -> SuBlock -> ExceptT String IO InBlock
 desugarBlock dir _          []         = return []
 desugarBlock dir macroStack ( c : cs ) = do
     desugaredC  <- desugarComm  dir macroStack c
@@ -61,7 +65,7 @@ desugarComm ::
     FilePath   -> -- Path to search for macro files
     [FilePath] -> -- Macro call stack
     SuCommand  -> -- The command to desugar
-    IO InBlock
+    ExceptT String IO InBlock
 desugarComm dir macroStack suComm = case suComm of
     SuAssign i x exp -> return [ InAssign i x exp ]
     SuWhile i gd blk -> do

@@ -4,6 +4,8 @@ module SourceParser where
 import Lexer
 import PureSyntax
 import SugarSyntax
+
+import Control.Monad.Except
 }
 
 %name parseProg PROGRAM
@@ -11,6 +13,7 @@ import SugarSyntax
 %name parseComm COMMAND
 %name parseLVal LVAL
 
+%monad { ExceptT String IO }
 %tokentype { Token }
 %error { parseError }
 
@@ -163,9 +166,9 @@ RESTLVALLIST :: { [ETree] }
 RESTLVALLIST : Comma LVAL RESTLVALLIST { $2 : $3 }
              | ClosSqu                 { []      }
 {
-parseError :: [Token] -> a
-parseError []           = error "Parse error: reached end of file while parsing"
-parseError (tok : rest) = error $ concat
+parseError :: [Token] -> ExceptT String IO a
+parseError [] = throwError "Parse error: reached end of file while parsing"
+parseError (tok : rest) = throwError $ concat
     [ "Parse error: "
     , (prettyPrintToken tok)
     , " in program/macro '"

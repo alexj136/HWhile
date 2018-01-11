@@ -1,10 +1,5 @@
 module Main where
 
-import qualified Data.Map           as M
-import qualified Data.Set           as S
-import System.Environment (getArgs)
-import System.FilePath
-import Data.List (intersperse)
 import qualified PureSyntax         as PS
 import Lexer (scan)
 import SourceParser (parseLVal)
@@ -14,6 +9,13 @@ import qualified DesugarIP          as IP
 import qualified PureInterpreter    as I
 import qualified LoggingInterpreter as LI
 import Unparser
+import qualified Data.Map           as M
+import qualified Data.Set           as S
+import System.Exit
+import System.Environment (getArgs)
+import System.FilePath
+import Data.List (intersperse)
+import Control.Monad.Except
 
 noArgsMessage :: String
 noArgsMessage = "No arguments supplied. Run 'hwhile -h' for help."
@@ -99,15 +101,22 @@ getShowFunctionAndInterpreterFunction flagStr = case flagStr of
     Just "-dLa"  -> let sfn = PS.showNestedAtomIntListTree                       in Just (sfn, LI.evalProg sfn)
     Just _       -> Nothing
 
--- Parse the command structure to pass appropriate arguments to doRun, or quit
--- with an error/help message.
 main :: IO ()
 main = do
-    args <- getArgs
+    result <- runExceptT exceptMain
+    case result of
+        Left errorMsg -> do putStrLn errorMsg ; exitFailure
+        Right ()      -> exitSuccess
+
+-- Parse the command structure to pass appropriate arguments to doRun, or quit
+-- with an error/help message.
+exceptMain :: ExceptT String IO ()
+exceptMain = do
+    args <- lift getArgs
     if (length args) == 0 then do
-        putStrLn noArgsMessage
+        lift $ putStrLn noArgsMessage
     else if (args !! 0) == "-h" then do
-        putStrLn helpMessage
+        lift $ putStrLn helpMessage
     else if (length args) == 2 && (args !! 0) == "-u" then do
         let mainFile = args !! 1
         doUnparse mainFile
@@ -121,26 +130,27 @@ main = do
         let argStr   = args !! 2
         doRun (Just flagStr) mainFile argStr
     else
-        putStrLn badArgsMessage
+        lift $ putStrLn badArgsMessage
 
-doUnparse :: FilePath -> IO ()
+doUnparse :: FilePath -> ExceptT String IO ()
 doUnparse mainFile =
     let mainFileDir      = takeDirectory mainFile
         mainFileBaseName = takeBaseName mainFile
     in do
         prog <- loadProg mainFileDir mainFileBaseName []
-        maybe (putStrLn "E") putStrLn (PS.showProgramTree (unparse (IP.desugarProg prog)))
+        maybe (lift (putStrLn "E")) (lift . putStrLn)
+            (PS.showProgramTree (unparse (IP.desugarProg prog)))
 
-doRun :: Maybe String -> FilePath -> String -> IO ()
+doRun :: Maybe String -> FilePath -> String -> ExceptT String IO ()
 doRun flagStr mainFile argStr =
     let mainFileDir      = takeDirectory mainFile
         mainFileBaseName = takeBaseName mainFile
     in case getShowFunctionAndInterpreterFunction flagStr of
-        Nothing -> putStrLn badArgsMessage
+        Nothing -> lift $ putStrLn badArgsMessage
         Just (showFunction, interpreterFunction) -> do
             result <- runFromParts mainFileDir mainFileBaseName argStr
                 interpreterFunction
-            putStrLn $ showFunction $ result
+            lift $ putStrLn $ showFunction $ result
 
 -- Run a program given the search path, file path, argument string and
 -- interpreting function
@@ -149,9 +159,9 @@ runFromParts ::
     FilePath                                -> -- The main file to run
     String                                  -> -- The argument string
     (PS.ETree -> PS.Program -> IO PS.ETree) -> -- The interpreting function
-    IO PS.ETree                                -- The result of the execution
+    ExceptT String IO PS.ETree                 -- The result of the execution
 runFromParts dir fileBaseName argStr interpret = do
     prog <- loadProg dir fileBaseName []
     let argTokens  = scan argStr "+IMPL+"
-    let argTree    = parseLVal argTokens
-    interpret argTree (IP.desugarProg prog)
+    argTree <- parseLVal argTokens
+    lift $ interpret argTree (IP.desugarProg prog)

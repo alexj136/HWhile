@@ -22,6 +22,8 @@ library
                         containers >=0.5 && <0.6,
                         array >=0.5 && <0.6,
                         filepath,
+                        haskeline,
+                        repline,
                         mtl
   exposed-modules:      Lexer,
                         SourceParser,
@@ -42,6 +44,7 @@ executable hwhile
                         containers >=0.5 && <0.6,
                         array >=0.5 && <0.6,
                         filepath,
+                        mtl,
                         hwhile
   build-tools:          alex, happy
   main-is:              Main.hs
@@ -53,6 +56,7 @@ Test-Suite hwhile-testsuite
                         containers >=0.5 && <0.6,
                         array >=0.5 && <0.6,
                         Cabal,
+                        mtl,
                         hwhile
   type:                 exitcode-stdio-1.0
   main-is:              UnitTests.hs

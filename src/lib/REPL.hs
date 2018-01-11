@@ -9,69 +9,50 @@ import InterSyntax
 import Data.List (isPrefixOf)
 import qualified Data.Map as M
 import qualified Data.Set as S
-import Control.Monad.State
+import Control.Monad.State.Strict
+import qualified System.Console.Haskeline as HL
+import qualified System.Console.Repline   as RL
+
+type REPL a = RL.HaskelineT IO a
+
+runREPL :: IO ()
+runREPL = RL.evalRepl "HWhile> " tryParseRunPrint options
+    (RL.Word0 completer) initialise
+
+tryParseRunPrint :: String -> REPL ()
+tryParseRunPrint = error "not yet implemented"
+
+initialise :: REPL ()
+initialise = liftIO $ putStrLn welcomeString
+
+options :: [(String, [String] -> REPL ())]
+options =
+    [ ("help"    , printHelp)
+    , ("quit"    , doQuit   )
+    , ("load"    , undefined)
+    , ("run"     , undefined)
+    , ("step"    , undefined)
+    , ("break"   , undefined)
+    , ("delbreak", undefined)
+    ]
+
+printHelp :: [String] -> REPL ()
+printHelp _ = liftIO $ putStrLn helpString
+
+doQuit :: [String] -> REPL ()
+doQuit _ = error "not yet implemented"
+
+completer :: Monad m => RL.WordCompleter m
+completer str = do
+    let completionWords = [ "while" , "switch" , "nil" ]
+    return $ filter (str `isPrefixOf`) completionWords
 
 type Breakpoint = (FilePath, Int)
-
-data REPLCommand
-    = EvalExp Expression
-    | ExecComm InCommand
-    | LoadProg FilePath
-    | RunProg
-    | StepProg
-    | SetBreakpoint Breakpoint
-    | DelBreakpoint Breakpoint
-    | PrintHelp
-    | Quit
-    deriving (Show, Eq, Ord)
 
 type REPLState = (Store, Maybe InCommand, S.Set Breakpoint)
 
 emptyREPLState :: REPLState
 emptyREPLState = (M.empty, Nothing, S.empty)
-
-replLoop :: REPLState -> IO ()
-replLoop replState = do
-    (toContinue, replState') <- (flip runStateT) replState $ do 
-        line <- replRead
-        case replParse line of
-            Nothing -> undefined
-            Just replComm -> replEval replComm
-    if toContinue then
-        replLoop replState'
-    else
-        return ()
-
-replRead :: StateT REPLState IO String
-replRead = lift getLine
-
-replParse :: String -> Maybe REPLCommand
-replParse str
-    | "load " `isPrefixOf` str = undefined
-    | "help"  ==           str = Just PrintHelp
-    | "quit"  ==           str = Just Quit
-    | otherwise                = undefined
-
-replEval :: REPLCommand -> StateT REPLState IO Bool
-replEval replComm = case replComm of
-    EvalExp exp -> do
-        store <- getStore
-        replPutStrLn . show $ evalExpr store exp
-        return True
-    ExecComm comm -> do
-        store <- getStore
-        let store' = evalInCommand store comm
-        putStore store'
-        return True
-    LoadProg filepath -> undefined
-    RunProg           -> undefined
-    StepProg          -> undefined
-    SetBreakpoint bp  -> undefined
-    DelBreakpoint bp  -> undefined
-    PrintHelp -> do
-        replPutStrLn helpString
-        return True
-    Quit -> return False
 
 evalInCommand :: Store -> InCommand -> Store
 evalInCommand store comm = case comm of
@@ -109,3 +90,7 @@ replPutStrLn = lift . putStrLn
 
 helpString :: String
 helpString = "RTFM"
+
+welcomeString :: String
+welcomeString = "Welcome to HWhile interactive mode. Type ':help' for more " ++
+    "information."

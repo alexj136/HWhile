@@ -71,6 +71,7 @@ tokens :-
     $alpha[$invar]*       { \p s fp -> Token ( fp , ITkVar s        , p ) }
     "0"                   { \p s fp -> Token ( fp , ITkInt (read s) , p ) }
     [1-9][$digit]*        { \p s fp -> Token ( fp , ITkInt (read s) , p ) }
+    .                     { \p s fp -> Token ( fp , ITkErr s        , p ) }
 
 {
 
@@ -121,6 +122,7 @@ data TokenType
     | TkAtomDoCons
     | ITkVar String
     | ITkInt Int
+    | ITkErr String
     deriving (Show, Eq)
 
 -- Main scanning function. Wraps makeGVars and alexScanTokens.
@@ -194,4 +196,5 @@ prettyPrintToken t = case t of
     Token (_, TkAtomDoCons  , _) -> "'@doCons'"
     Token (_, ITkVar   s    , _) -> "variable  '" ++ s ++ "'"
     Token (_, ITkInt   i    , _) -> "integer  '" ++ show i ++ "'"
+    Token (_, ITkErr   s    , _) -> s
 }

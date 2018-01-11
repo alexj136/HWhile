@@ -2,7 +2,6 @@ module Main where
 
 import qualified Data.Map        as M
 import qualified Data.Set        as S
-import System.Exit
 import qualified Lexer           as L
 import qualified SourceParser    as SP
 import qualified PureSyntax      as PS
@@ -12,8 +11,11 @@ import qualified PureInterpreter as I
 import qualified DesugarSI       as SI
 import qualified DesugarIP       as IP
 
+import System.Exit
+import Control.Monad.Except
+
 addProg, countProg, equalsProg, numberProg, xorProg, macroProg, casesProg
-    :: IO IS.InProgram
+    :: ExceptT String IO IS.InProgram
 addProg    = SI.loadProg "examples" "add"    []
 countProg  = SI.loadProg "examples" "count"  []
 equalsProg = SI.loadProg "examples" "equals" []
@@ -24,18 +26,24 @@ casesProg  = SI.loadProg "examples" "cases"  []
 
 -- Run a program obtained through IO with the given input, and compare the
 -- output with a given expression
-testRun :: String -> IO IS.InProgram -> String -> IO Bool
-testRun argumentString ioProg expectedResultString = do
-    prog <- ioProg
+testRun :: String -> ExceptT String IO IS.InProgram -> String -> IO Bool
+testRun argumentString eioProg expectedResultString = do
+    prog <- errorIfExcepts eioProg
+    argumentExpr <- errorIfExcepts $
+        SP.parseLVal (L.scan argumentString       "+TEST+")
+    expectedRes  <- errorIfExcepts $
+        SP.parseLVal (L.scan expectedResultString "+TEST+")
     return (I.evalProg argumentExpr (IP.desugarProg prog) == expectedRes)
-    where
-        argumentExpr = SP.parseLVal (L.scan argumentString       "+TEST+")
-        expectedRes  = SP.parseLVal (L.scan expectedResultString "+TEST+")
 
 test :: String -> IO Bool -> IO (String, Bool)
 test desc ioRes = do
     res <- ioRes
     return (desc, res)
+
+errorIfExcepts :: ExceptT String IO a -> IO a
+errorIfExcepts excA = do
+    eithA <- runExceptT excA
+    case eithA of { Left err -> error err ; Right a -> return a }
 
 main :: IO ExitCode
 main = do
