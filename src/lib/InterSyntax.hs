@@ -2,7 +2,8 @@ module InterSyntax where
 
 {- This module defines an intermediate-level version of the syntax for commands,
  - including conditional and switch commands, but no macros. This module is
- - included for easier parsing and translation to pure syntax.
+ - included for interactive execution, and as an intermediate step before
+ - translation to pure while syntax.
  -}
 
 import qualified Data.Set as S
