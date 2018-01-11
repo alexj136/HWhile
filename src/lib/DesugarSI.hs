@@ -1,4 +1,4 @@
-module DesugarSI ( loadProg , desugarProg ) where
+module DesugarSI where
 
 import System.FilePath (pathSeparator)
 import SourceParser (parseProg)

@@ -9,6 +9,7 @@ import qualified DesugarIP          as IP
 import qualified PureInterpreter    as I
 import qualified LoggingInterpreter as LI
 import Unparser
+import REPL
 import qualified Data.Map           as M
 import qualified Data.Set           as S
 import System.Exit
@@ -16,6 +17,7 @@ import System.Environment (getArgs)
 import System.FilePath
 import Data.List (intersperse)
 import Control.Monad.Except
+import Control.Monad.State.Strict (runStateT)
 
 noArgsMessage :: String
 noArgsMessage = "No arguments supplied. Run 'hwhile -h' for help."
@@ -28,6 +30,7 @@ helpMessage = concat $ (intersperse "\n") $
     [ "HWhile: a Haskell implementation of the while language, by Alex Jeffery."
     , "Usage:"
     , "    hwhile -h                    - Print this message and exit."
+    , "    hwhile -r                    - Enter interactive mode."
     , "    hwhile <FLAG> <FILE> <EXPR>  - Run the program in <FILE> with input"
     , "                                   <EXPR>. Note that <EXPR> may require"
     , "                                   surrounding \"double quotes\"."
@@ -115,6 +118,9 @@ exceptMain = do
     args <- lift getArgs
     if (length args) == 0 then do
         lift $ putStrLn noArgsMessage
+    else if (args !! 0) == "-r" then do
+        lift $ runStateT runREPL emptyREPLState
+        return ()
     else if (args !! 0) == "-h" then do
         lift $ putStrLn helpMessage
     else if (length args) == 2 && (args !! 0) == "-u" then do
