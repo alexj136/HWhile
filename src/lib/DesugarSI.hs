@@ -1,4 +1,4 @@
-module DesugarSI where
+module DesugarSI (loadProg, desugarProg, desugarBlock, desugarComm) where
 
 import System.FilePath (pathSeparator)
 import SourceParser (parseProg)
@@ -8,6 +8,9 @@ import InterSyntax
 import SugarSyntax
 import qualified Data.Set as S
 import Control.Monad.Except
+import Control.Exception (try)
+import Control.Exception.Base (SomeException)
+import Control.Arrow (left)
 
 -- Given its directory, base name, a macro call stack and macro seed, load a
 -- program from disk, returning it with the macro seed after unparsing etc.
@@ -27,7 +30,7 @@ loadProg dir fileBaseName macroStack =
     if fileBaseName `elem` macroStack then
         throwError "Recursive macros detected."
     else do
-        fileStr <- lift $ readFile $
+        fileStr <- safeReadFile $
             dir ++ pathSeparator : fileBaseName ++ ".while"
         let fileTokens  = scan fileStr fileBaseName
         suProg <- parseProg fileTokens
@@ -44,6 +47,14 @@ loadProg dir fileBaseName macroStack =
                         (S.toList namesToInit)
                 in desugarProg dir ( fileBaseName : macroStack )
                     ( SuProgram n r ( initCode ++ b ) w )
+
+-- Safely read a file in the ExceptT String IO monad.
+safeReadFile :: FilePath -> ExceptT String IO String
+safeReadFile file = do
+    tryFile <- lift $ try $ readFile file
+    case tryFile of
+        Left  exc          -> throwError $ show (exc :: SomeException)
+        Right fileContents -> return fileContents
 
 -- Desugar a program, that is, convert it to pure while syntax
 desugarProg :: FilePath -> [FilePath] -> SuProgram ->
