@@ -164,3 +164,7 @@ For example:
 
 This example takes a list of numbers as its argument and outputs their sum, so
 you should see `6` as the output.
+
+It is recommended to add `dist/build/hwhile/` to your system's path variable,
+which will allow you to run `hwhile` from any directory without specifying the
+full path each time.
