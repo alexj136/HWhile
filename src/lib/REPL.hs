@@ -8,6 +8,7 @@ import InterSyntax
 import SugarSyntax
 import PureInterpreter (evalExpr, Store)
 
+import Prelude hiding (break)
 import Text.Read (readMaybe)
 import Data.Either (lefts)
 import Data.List (isPrefixOf, intersperse, intercalate)
@@ -83,8 +84,8 @@ options =
     , ("cd"       , cd       )
     , ("store"    , store    )
     , ("step"     , step     )
-    , ("break"    , undefined)
-    , ("delbreak" , undefined)
+    , ("break"    , break    )
+    , ("delbreak" , delbreak )
     ]
 
 help :: [String] -> REPL ()
@@ -175,9 +176,35 @@ break :: [String] -> REPL ()
 break args
     | length args /= 1 = replPutStrLn "Please supply a line number."
     | otherwise        = do
-        fp <- getCurrentFilePath
-        --putBreakpoint (fp
-        undefined
+        maybeFp <- getCurrentFilePath
+        case maybeFp of
+            Nothing -> replPutStrLn $ "Cannot set breakpoint as no program " ++
+                "is loaded. Load one with ':load' and try again."
+            Just fp -> do
+                let maybeLine = readMaybe (head args) :: Maybe Int
+                case maybeLine of
+                    Nothing -> replPutStrLn "Please supply a line number."
+                    Just n  -> do
+                        putBreakpoint (fp, n)
+                        replPutStrLn $ "Breakpoint set in program " ++ fp ++
+                            " at line " ++ show n ++ "."
+
+delbreak :: [String] -> REPL ()
+delbreak args
+    | length args /= 1 = replPutStrLn "Please supply a line number."
+    | otherwise        = do
+        maybeFp <- getCurrentFilePath
+        case maybeFp of
+            Nothing -> replPutStrLn $ "Cannot delete breakpoint as no " ++
+                "program is loaded."
+            Just fp -> do
+                let maybeLine = readMaybe (head args) :: Maybe Int
+                case maybeLine of
+                    Nothing -> replPutStrLn "Please supply a line number."
+                    Just n  -> do
+                        delBreakpoint (fp, n)
+                        replPutStrLn $ "Breakpoint removed from program " ++
+                            fp ++ " at line " ++ show n ++ "."
 
 completer :: Monad m => RL.WordCompleter m
 completer str = do
@@ -206,9 +233,10 @@ runToBreakpoint store bps blk printFn =
             []              -> res
             Right _     : _ -> runToBreakpoint store' bps blk' printFn
             Left inComm : _ -> case info inComm of
-                Info i ->
+                Info i@(fp, line) ->
                     if S.member i bps then
-                        res
+                        (store', blk', "Stopping at line " ++ show line ++
+                            " of program " ++ fp ++ ".")
                     else
                         runToBreakpoint store' bps blk' printFn
 
