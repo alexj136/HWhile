@@ -28,6 +28,13 @@ data InCommand
     | InSwitch Info Expression [(Expression, InBlock)] InBlock
     deriving (Show, Eq, Ord)
 
+info :: InCommand -> Info
+info comm = case comm of
+    InAssign i _ _   -> i
+    InWhile  i _ _   -> i
+    InIfElse i _ _ _ -> i
+    InSwitch i _ _ _ -> i
+
 namesInProg :: InProgram -> S.Set Name
 namesInProg (InProgram n r b w) = foldr S.insert (namesInBlock b) [n, r, w]
 
