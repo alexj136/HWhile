@@ -116,8 +116,8 @@ Note that you may need to add the Haskell Platform's binaries to your system's
 path variable.
 
 #### Installing HWhile
-To compile HWhile, first download HWhile (either using `git clone` or by
-clicking the 'Download ZIP' button on HWhile's
+Download HWhile (either using `git clone` or by clicking the 'Download ZIP'
+button on HWhile's
 [Github Page](https://github.com/alexj136/hwhile). Extract the downloaded files
 (if necessary).
 
