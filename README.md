@@ -116,17 +116,13 @@ Note that you may need to add the Haskell Platform's binaries to your system's
 path variable.
 
 #### Installing HWhile
-Download HWhile (either using `git clone` or by clicking the 'Download ZIP'
-button on HWhile's
-[Github Page](https://github.com/alexj136/hwhile). Extract the downloaded files
-(if necessary).
+Once the Haskell Platform is installed and configured correctly, you can install
+HWhile by running:
 
-Next, `cd` into the root directory of the repository, and run:
+    stack install hwhile
 
-    stack install
-
-This will download the required libraries (if necessary), and compile and
-install HWhile.
+This will download HWhile and its depenencies (if necessary) and compile and
+install them.
 
 #### Invocation
 If installed correctly, HWhile can be run with the command:
