@@ -25,12 +25,17 @@ noArgsMessage = "No arguments supplied. Run 'hwhile -h' for help."
 badArgsMessage :: String
 badArgsMessage = "Invalid argument(s) supplied. Run 'hwhile -h' for help."
 
+versionMessage :: String
+versionMessage = "HWhile version 0.1.1.0"
+
 helpMessage :: String
 helpMessage = concat $ (intersperse "\n") $
     [ "HWhile: a Haskell implementation of the while language, by Alex Jeffery."
     , "Usage:"
     , "    hwhile -h                    - Print this message and exit."
     , "    hwhile -r                    - Enter interactive mode."
+    , "    hwhile -v                    - Print HWhile's version number and"
+    , "                                   exit."
     , "    hwhile <FLAG> <FILE> <EXPR>  - Run the program in <FILE> with input"
     , "                                   <EXPR>. Note that <EXPR> may require"
     , "                                   surrounding \"double quotes\"."
@@ -123,6 +128,8 @@ exceptMain = do
         return ()
     else if (args !! 0) == "-h" then do
         lift $ putStrLn helpMessage
+    else if (args !! 0) == "-v" then do
+        lift $ putStrLn versionMessage
     else if (length args) == 2 && (args !! 0) == "-u" then do
         let mainFile = args !! 1
         doUnparse mainFile
