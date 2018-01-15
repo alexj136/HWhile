@@ -10,7 +10,7 @@ import PureInterpreter (evalExpr, Store)
 
 import Prelude hiding (break)
 import Text.Read (readMaybe)
-import Data.Either (lefts)
+import Data.Either (lefts, either)
 import Data.List (isPrefixOf, intersperse, intercalate)
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -29,6 +29,12 @@ type Breakpoint = (FilePath, Int)
 
 data DebugOp = WhileRead Name ETree | WhileWrite Name | Message String
     deriving (Show, Eq, Ord)
+
+namesDebugOp :: DebugOp -> S.Set Name
+namesDebugOp dbo = case dbo of
+    WhileRead  n _ -> S.singleton n
+    WhileWrite n   -> S.singleton n
+    _              -> S.empty
 
 type REPLState =
     ( Store                         -- The store for interactive execution
@@ -92,11 +98,11 @@ help :: [String] -> REPL ()
 help _ = liftIO $ putStrLn helpString
 
 load :: [String] -> REPL ()
-load args
-    | length args <= 1 =
+load args =
+    if length args <= 1 then
         replPutStrLn $ "Please supply a single while program name, and an " ++
             "argument literal (e.g. <nil.nil>)."
-    | otherwise        = do
+    else do
         path    <- getPath
         progTry <- loadProg path (head args)
         argTry  <- parseLVal (intercalate " " (tail args))
@@ -105,6 +111,7 @@ load args
             (_         , Left  err ) -> replPutStrLn err
             (Left  err , _         ) -> replPutStrLn err
             (Right prog, Right arg ) -> do
+                clearStore
                 replPutStrLn $ "Program '" ++ (head args) ++ "' loaded."
                 case prog of
                     InProgram _ rd blk wr ->
@@ -112,10 +119,10 @@ load args
                             [Right (WhileWrite wr)]
 
 run :: [String] -> REPL ()
-run args
-    | length args /= 0 = replPutStrLn $
-        "Error: did not expect '" ++ intercalate " " args ++ "'."
-    | otherwise        = do
+run args =
+    if length args /= 0 then
+        replPutStrLn $ "Error: did not expect '" ++ intercalate " " args ++ "'."
+    else do
         store   <- getStore
         bps     <- getBreakpoints
         blk     <- getProg
@@ -126,10 +133,10 @@ run args
         replPutStrLn msg
 
 printmode :: [String] -> REPL ()
-printmode args
-    | length args /= 1 =
+printmode args =
+    if length args /= 1 then
         replPutStrLn "Please supply a single print mode string."
-    | otherwise        = case head args of
+    else case head args of
         "i"   -> putPrintFn $ \tree -> maybe "E" show $ parseInt tree
         "iv"  -> putPrintFn $ \tree -> maybe (show tree) show $ parseInt tree
         "l"   -> putPrintFn $ show . toHaskellList
@@ -142,15 +149,17 @@ printmode args
             "more information."
 
 cd :: [String] -> REPL ()
-cd args
-    | length args /= 1 = replPutStrLn "Please supply a single directory path."
-    | otherwise        = putPath (head args)
+cd args =
+    if length args /= 1 then
+         replPutStrLn "Please supply a single directory path."
+    else
+        putPath (head args)
 
 store :: [String] -> REPL ()
-store args
-    | length args /= 0 = replPutStrLn $
-        "Error: did not expect '" ++ intercalate " " args ++ "'."
-    | otherwise        = do
+store args =
+    if length args /= 0 then
+        replPutStrLn $ "Error: did not expect '" ++ intercalate " " args ++ "'."
+    else do
         store <- getStore
         printFn <- getPrintFn
         let output = intercalate "\n" $
@@ -160,10 +169,10 @@ store args
         replPutStrLn output
 
 step :: [String] -> REPL ()
-step args
-    | length args /= 0 = replPutStrLn $
-        "Error: did not expect '" ++ intercalate " " args ++ "'."
-    | otherwise        = do
+step args =
+    if length args /= 0 then
+        replPutStrLn $ "Error: did not expect '" ++ intercalate " " args ++ "'."
+    else do
         store   <- getStore
         blk     <- getProg
         printFn <- getPrintFn
@@ -173,38 +182,42 @@ step args
         replPutStrLn msg
 
 break :: [String] -> REPL ()
-break args
-    | length args /= 1 = replPutStrLn "Please supply a line number."
-    | otherwise        = do
-        maybeFp <- getCurrentFilePath
-        case maybeFp of
-            Nothing -> replPutStrLn $ "Cannot set breakpoint as no program " ++
-                "is loaded. Load one with ':load' and try again."
-            Just fp -> do
-                let maybeLine = readMaybe (head args) :: Maybe Int
-                case maybeLine of
-                    Nothing -> replPutStrLn "Please supply a line number."
-                    Just n  -> do
-                        putBreakpoint (fp, n)
-                        replPutStrLn $ "Breakpoint set in program " ++ fp ++
-                            " at line " ++ show n ++ "."
+break [lineStr] = do fp <- getCurrentFilePath ; doBreak fp (readMaybe lineStr)
+break [lineStr, fp] = doBreak fp (readMaybe lineStr)
+break _ = replPutStrLn $
+    "Please supply a line number and optionally a single filename."
+
+doBreak :: String -> Maybe Int -> REPL()
+doBreak fp maybeLine =
+    if fp == "<interactive>" then replPutStrLn $
+        "Cannot set breakpoint as no program is loaded. Load one with " ++
+            "':load' and try again."
+    else case maybeLine of
+        Nothing -> replPutStrLn "Please supply a line number."
+        Just n  -> do
+            putBreakpoint (fp, n)
+            replPutStrLn $ "Breakpoint set in program " ++ fp ++
+                " at line " ++ show n ++ "."
 
 delbreak :: [String] -> REPL ()
-delbreak args
-    | length args /= 1 = replPutStrLn "Please supply a line number."
-    | otherwise        = do
-        maybeFp <- getCurrentFilePath
-        case maybeFp of
-            Nothing -> replPutStrLn $ "Cannot delete breakpoint as no " ++
-                "program is loaded."
-            Just fp -> do
-                let maybeLine = readMaybe (head args) :: Maybe Int
-                case maybeLine of
-                    Nothing -> replPutStrLn "Please supply a line number."
-                    Just n  -> do
-                        delBreakpoint (fp, n)
-                        replPutStrLn $ "Breakpoint removed from program " ++
-                            fp ++ " at line " ++ show n ++ "."
+delbreak [lineStr] = do
+    fp <- getCurrentFilePath
+    doDelBreak fp (readMaybe lineStr)
+delbreak [lineStr, fp] =
+    doDelBreak fp (readMaybe lineStr)
+delbreak _ = replPutStrLn $
+    "Please supply a line number and optionally a single filename."
+
+doDelBreak :: String -> Maybe Int -> REPL()
+doDelBreak fp maybeLine =
+    if fp == "<interactive>" then
+        replPutStrLn "Cannot delete breakpoint as no program is loaded."
+    else case maybeLine of
+        Nothing -> replPutStrLn "Please supply a line number."
+        Just n  -> do
+            delBreakpoint (fp, n)
+            replPutStrLn $ "Breakpoint removed from program " ++ fp ++
+                " at line " ++ show n ++ "."
 
 completer :: Monad m => RL.WordCompleter m
 completer str = do
@@ -303,6 +316,9 @@ putStore :: Store -> REPL ()
 putStore st = lift $ modify $
     \(_, p, bps, pf, fp) -> (st, p, bps, pf, fp)
 
+clearStore :: REPL ()
+clearStore = putStore M.empty
+
 getFromStore :: Name -> REPL (Maybe ETree)
 getFromStore name = do store <- getStore ; return $ M.lookup name store
 
@@ -315,12 +331,12 @@ getProg = do (_, p, _, _, _) <- lift get ; return p
 putProg :: [Either InCommand DebugOp] -> REPL ()
 putProg blk = lift $ modify $ \(st, _, bps, pf, fp) -> (st, blk, bps, pf, fp)
 
-getCurrentFilePath :: REPL (Maybe FilePath)
+getCurrentFilePath :: REPL FilePath
 getCurrentFilePath = do
     blk <- getProg
     case lefts blk of
-        [] -> return Nothing
-        cs -> return $ Just $ case info (head cs) of Info (fp, line) -> fp
+        [] -> return "<interactive>"
+        cs -> return $ case info (head cs) of Info (fp, line) -> fp
 
 getBreakpoints :: REPL (S.Set Breakpoint)
 getBreakpoints = do (_, _, bps, _, _) <- lift get ; return bps
@@ -357,16 +373,19 @@ putPath fp = lift $ modify $
 --------------------------------------------------------------------------------
 
 parseExpr :: String -> REPL (Either String Expression)
-parseExpr = lift . lift . runExceptT . SP.parseExpr .
-    (flip L.scan "<interactive>")
+parseExpr str = do
+    namePath <- getCurrentFilePath
+    lift . lift . runExceptT $ SP.parseExpr (L.scan str namePath)
 
 parseComm :: String -> REPL (Either String SuCommand)
-parseComm = lift . lift . runExceptT . SP.parseComm .
-    (flip L.scan "<interactive>")
+parseComm str = do
+    namePath <- getCurrentFilePath
+    lift . lift . runExceptT $ SP.parseComm (L.scan str namePath)
 
 parseLVal :: String -> REPL (Either String ETree)
-parseLVal = lift . lift . runExceptT . SP.parseLVal .
-    (flip L.scan "<interactive>")
+parseLVal str = do
+    namePath <- getCurrentFilePath
+    lift . lift . runExceptT $ SP.parseLVal (L.scan str namePath)
 
 desugarComm :: FilePath {- Macro search path -} -> SuCommand ->
     REPL (Either String InBlock)
@@ -389,7 +408,8 @@ helpString = concat $ (intersperse "\n") $
     , "    <COMM>         - Execute a while command."
     , "    :help          - Print this message."
     , "    :load p <EXPR> - Load a while program 'p' (i.e. from the file "
-    , "                     'p.while') for execution with argument <EXPR>."
+    , "                     'p.while') for execution with argument <EXPR>. Note"
+    , "                     that this clears the current store contents."
     , "    :run           - Run the loaded program up until the next "
     , "                     breakpoint."
     , "    :step          - Step through a single line of the loaded program."
@@ -399,6 +419,11 @@ helpString = concat $ (intersperse "\n") $
     , "                     and then run 'hwhile -h' for more info on print "
     , "                     modes."
     , "    :cd dir        - Change the current file search path to 'dir'."
+    , "    :break n       - Add a breakpoint to line 'n' of the loaded program."
+    , "    :break n p     - Add a breakpoint to line 'n' of program 'p'."
+    , "    :delbreak n    - Delete the breakpoint on line 'n' of the loaded"
+    , "                     program."
+    , "    :delbreak n p  - Delete the breakpoint on line 'n' of program 'p'."
     , "    (Ctrl+D)       - Quit interactive mode."
     ]
 
