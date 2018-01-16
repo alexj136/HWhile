@@ -26,7 +26,7 @@ badArgsMessage :: String
 badArgsMessage = "Invalid argument(s) supplied. Run 'hwhile -h' for help."
 
 versionMessage :: String
-versionMessage = "HWhile version 0.1.1.0"
+versionMessage = "HWhile version 0.1.1.1"
 
 helpMessage :: String
 helpMessage = concat $ (intersperse "\n") $

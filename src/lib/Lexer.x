@@ -11,7 +11,7 @@ module Lexer
     ) where
 }
 
-%wrapper "posn"
+%wrapper "monadUserState"
 
 $digit = 0-9
 $lower = a-z
@@ -22,56 +22,58 @@ $inmac = [$alpha \_ \$]
 $invar = [$inmac $digit]
 
 tokens :-
-    $white+               ; -- Ignore whitespace
-    \/\/.*\n              ; -- // single line comments
-    \(\*(.|\n)*\*\)       ; -- (* Multiline comments *)
-    \.                    { \p s fp -> Token ( fp , TkDot           , p ) }
-    \(                    { \p s fp -> Token ( fp , TkOpenBrc       , p ) }
-    \)                    { \p s fp -> Token ( fp , TkClosBrc       , p ) }
-    \{                    { \p s fp -> Token ( fp , TkOpenCur       , p ) }
-    \}                    { \p s fp -> Token ( fp , TkClosCur       , p ) }
-    \[                    { \p s fp -> Token ( fp , TkOpenSqu       , p ) }
-    \]                    { \p s fp -> Token ( fp , TkClosSqu       , p ) }
-    \<                    { \p s fp -> Token ( fp , TkOpenAng       , p ) }
-    \>                    { \p s fp -> Token ( fp , TkClosAng       , p ) }
-    \,                    { \p s fp -> Token ( fp , TkComma         , p ) }
-    \:\=                  { \p s fp -> Token ( fp , TkAssign        , p ) }
-    \:                    { \p s fp -> Token ( fp , TkColon         , p ) }
-    \=                    { \p s fp -> Token ( fp , TkIsEq          , p ) }
-    "nil"                 { \p s fp -> Token ( fp , TkNil           , p ) }
-    \;                    { \p s fp -> Token ( fp , TkSemiCo        , p ) }
-    "cons"                { \p s fp -> Token ( fp , TkCons          , p ) }
-    "hd"                  { \p s fp -> Token ( fp , TkHd            , p ) }
-    "tl"                  { \p s fp -> Token ( fp , TkTl            , p ) }
-    "while"               { \p s fp -> Token ( fp , TkWhile         , p ) }
-    "switch"              { \p s fp -> Token ( fp , TkSwitch        , p ) }
-    "case"                { \p s fp -> Token ( fp , TkCase          , p ) }
-    "default"             { \p s fp -> Token ( fp , TkDefault       , p ) }
-    "if"                  { \p s fp -> Token ( fp , TkIf            , p ) }
-    "else"                { \p s fp -> Token ( fp , TkElse          , p ) }
-    "read"                { \p s fp -> Token ( fp , TkRead          , p ) }
-    "write"               { \p s fp -> Token ( fp , TkWrite         , p ) }
-    "true"                { \p s fp -> Token ( fp , TkTrue          , p ) }
-    "false"               { \p s fp -> Token ( fp , TkFalse         , p ) }
-    "@:="                 { \p s fp -> Token ( fp , TkAtomAsgn      , p ) }
-    "@asgn"               { \p s fp -> Token ( fp , TkAtomAsgn      , p ) }
-    "@doAsgn"             { \p s fp -> Token ( fp , TkAtomDoAsgn    , p ) }
-    "@while"              { \p s fp -> Token ( fp , TkAtomWhile     , p ) }
-    "@doWhile"            { \p s fp -> Token ( fp , TkAtomDoWhile   , p ) }
-    "@if"                 { \p s fp -> Token ( fp , TkAtomIf        , p ) }
-    "@doIf"               { \p s fp -> Token ( fp , TkAtomDoIf      , p ) }
-    "@var"                { \p s fp -> Token ( fp , TkAtomVar       , p ) }
-    "@quote"              { \p s fp -> Token ( fp , TkAtomQuote     , p ) }
-    "@hd"                 { \p s fp -> Token ( fp , TkAtomHd        , p ) }
-    "@doHd"               { \p s fp -> Token ( fp , TkAtomDoHd      , p ) }
-    "@tl"                 { \p s fp -> Token ( fp , TkAtomTl        , p ) }
-    "@doTl"               { \p s fp -> Token ( fp , TkAtomDoTl      , p ) }
-    "@cons"               { \p s fp -> Token ( fp , TkAtomCons      , p ) }
-    "@doCons"             { \p s fp -> Token ( fp , TkAtomDoCons    , p ) }
-    $alpha[$invar]*       { \p s fp -> Token ( fp , ITkVar s        , p ) }
-    "0"                   { \p s fp -> Token ( fp , ITkInt (read s) , p ) }
-    [1-9][$digit]*        { \p s fp -> Token ( fp , ITkInt (read s) , p ) }
-    .                     { \p s fp -> Token ( fp , ITkErr s        , p ) }
+    <0>       $white+         { skip                    }
+    <0>       \/\/.*\n        { skip                    }
+    <0>       "(*"            { skip `andBegin` comment }
+    <comment> "*)"            { skip `andBegin` 0       }
+    <comment> .|\n            { skip                    }
+    <0>       "."             { makeToken TkDot         }
+    <0>       "("             { makeToken TkOpenBrc     }
+    <0>       ")"             { makeToken TkClosBrc     }
+    <0>       "{"             { makeToken TkOpenCur     }
+    <0>       "}"             { makeToken TkClosCur     }
+    <0>       "["             { makeToken TkOpenSqu     }
+    <0>       "]"             { makeToken TkClosSqu     }
+    <0>       "<"             { makeToken TkOpenAng     }
+    <0>       ">"             { makeToken TkClosAng     }
+    <0>       ","             { makeToken TkComma       }
+    <0>       ":="            { makeToken TkAssign      }
+    <0>       ":"             { makeToken TkColon       }
+    <0>       "="             { makeToken TkIsEq        }
+    <0>       "nil"           { makeToken TkNil         }
+    <0>       ";"             { makeToken TkSemiCo      }
+    <0>       "cons"          { makeToken TkCons        }
+    <0>       "hd"            { makeToken TkHd          }
+    <0>       "tl"            { makeToken TkTl          }
+    <0>       "while"         { makeToken TkWhile       }
+    <0>       "switch"        { makeToken TkSwitch      }
+    <0>       "case"          { makeToken TkCase        }
+    <0>       "default"       { makeToken TkDefault     }
+    <0>       "if"            { makeToken TkIf          }
+    <0>       "else"          { makeToken TkElse        }
+    <0>       "read"          { makeToken TkRead        }
+    <0>       "write"         { makeToken TkWrite       }
+    <0>       "true"          { makeToken TkTrue        }
+    <0>       "false"         { makeToken TkFalse       }
+    <0>       "@:="           { makeToken TkAtomAsgn    }
+    <0>       "@asgn"         { makeToken TkAtomAsgn    }
+    <0>       "@doAsgn"       { makeToken TkAtomDoAsgn  }
+    <0>       "@while"        { makeToken TkAtomWhile   }
+    <0>       "@doWhile"      { makeToken TkAtomDoWhile }
+    <0>       "@if"           { makeToken TkAtomIf      }
+    <0>       "@doIf"         { makeToken TkAtomDoIf    }
+    <0>       "@var"          { makeToken TkAtomVar     }
+    <0>       "@quote"        { makeToken TkAtomQuote   }
+    <0>       "@hd"           { makeToken TkAtomHd      }
+    <0>       "@doHd"         { makeToken TkAtomDoHd    }
+    <0>       "@tl"           { makeToken TkAtomTl      }
+    <0>       "@doTl"         { makeToken TkAtomDoTl    }
+    <0>       "@cons"         { makeToken TkAtomCons    }
+    <0>       "@doCons"       { makeToken TkAtomDoCons  }
+    <0>       $alpha[$invar]* { makeVar                 }
+    <0>       "0"             { makeInt                 }
+    <0>       [1-9][$digit]*  { makeInt                 }
+    <0>       .               { makeErr                 }
 
 {
 
@@ -123,16 +125,48 @@ data TokenType
     | ITkVar String
     | ITkInt Int
     | ITkErr String
+    | TkEOF
     deriving (Show, Eq)
-
--- Main scanning function. Wraps makeGVars and alexScanTokens.
-scan :: String -> FilePath -> [Token]
-scan s fp = map (\t -> t fp) (alexScanTokens s)
 
 -- The default implementation is not quite sufficient - it is more useful for
 -- tokens to be equal regardless of position
 instance Eq Token where
-    (==) (Token (_, tyA, _)) (Token (_, tyB, _)) = tyA == tyB
+    (==) (Token (fpA, tyA, _)) (Token (fpB, tyB, _)) = (fpA, tyA) == (fpB, tyB)
+
+newtype AlexUserState = AlexUserState () deriving Show
+
+alexInitUserState :: AlexUserState
+alexInitUserState = AlexUserState ()
+
+makeToken :: TokenType -> AlexInput -> Int -> Alex (FilePath -> Token)
+makeToken ty (p, _, _, s) len = return $ \fp -> Token (fp, ty, p)
+
+makeVar :: AlexInput -> Int -> Alex (FilePath -> Token)
+makeVar (p, _, _, s) len = return $ \fp -> Token (fp, ITkVar (take len s), p)
+
+makeInt :: AlexInput -> Int -> Alex (FilePath -> Token)
+makeInt (p, _, _, s) len =
+    return $ \fp -> Token (fp, ITkInt (read (take len s)), p)
+
+makeErr :: AlexInput -> Int -> Alex (FilePath -> Token)
+makeErr (p, _, _, s) len = return $ \fp -> Token (fp, ITkErr (take len s), p)
+
+alexEOF :: Alex (FilePath -> Token)
+alexEOF = return $ \fp -> Token (fp, TkEOF, undefined)
+
+scan :: String -> FilePath -> [Token]
+scan s fp = case runAlex s loop of 
+    Left  err -> error err
+    Right res -> map (\r -> r fp) res
+    where
+    loop = do
+        tk <- alexMonadScan
+        case tk (error "EOF") of
+            Token (_, TkEOF, _) ->
+                return []
+            Token _             -> do
+                tks <- loop
+                return $ tk:tks
 
 -- Get the number of lines into the file that the text produced this token
 -- occurred
@@ -197,4 +231,5 @@ prettyPrintToken t = case t of
     Token (_, ITkVar   s    , _) -> "variable  '" ++ s ++ "'"
     Token (_, ITkInt   i    , _) -> "integer  '" ++ show i ++ "'"
     Token (_, ITkErr   s    , _) -> s
+    Token (_, TkEOF         , _) -> "EOF"
 }
