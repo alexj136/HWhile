@@ -12,7 +12,13 @@ data SuProgram = SuProgram Name Name SuBlock Name deriving Eq
  
 type SuBlock = [SuCommand]
 
-newtype Info = Info (FilePath, Int) deriving (Show, Eq, Ord)
+newtype Info = Info { getInfo :: (FilePath, Int) } deriving (Show, Eq, Ord)
+
+fileInfo :: Info -> FilePath
+fileInfo = fst . getInfo
+
+lineInfo :: Info -> Int
+lineInfo = snd. getInfo
 
 -- The sugared command syntax - has conditionals, macros and switches in
 -- addition to the pure syntax commands.

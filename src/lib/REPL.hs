@@ -73,7 +73,12 @@ execute str = do
                         Left err   -> replPutStrLn err
                         Right comm -> do
                             store <- getStore
-                            putStore $ evalInBlock store comm
+                            -- Here we use $! to force strict evaluation of
+                            -- the expression 'evalInBlock store comm'. This
+                            -- means that infinite loops make the REPL hang
+                            -- right now, rather than next time the store is
+                            -- used.
+                            putStore $! evalInBlock store comm
         Right exp -> do
             store <- getStore
             replPutStrLn $ printFn $ evalExpr store exp
@@ -164,7 +169,7 @@ store args =
         printFn <- getPrintFn
         let output = intercalate "\n" $
                 map (\(Name (fp, n), tree) ->
-                        "(" ++ fp ++ ") " ++ n ++ " := " ++ printFn tree) $
+                        "(" ++ fp ++ ") " ++ n ++ " = " ++ printFn tree) $
                 M.assocs store
         replPutStrLn output
 
@@ -182,6 +187,15 @@ step args =
         replPutStrLn msg
 
 break :: [String] -> REPL ()
+break [] = do
+    bps <- getBreakpoints
+    if S.null bps then do
+        replPutStrLn "No breakpoints set."
+    else do
+        let output = intercalate "\n" $ map (\(fp, n) ->
+                "Program '" ++ fp ++ "', line " ++ show n ++ ".") $ S.toList bps
+        replPutStrLn "Current breakpoints:"
+        replPutStrLn output
 break [lineStr] = do fp <- getCurrentFilePath ; doBreak fp (readMaybe lineStr)
 break [lineStr, fp] = doBreak fp (readMaybe lineStr)
 break _ = replPutStrLn $
@@ -248,8 +262,10 @@ runToBreakpoint store bps blk printFn =
             Left inComm : _ -> case info inComm of
                 Info i@(fp, line) ->
                     if S.member i bps then
-                        (store', blk', "Stopping at line " ++ show line ++
-                            " of program " ++ fp ++ ".")
+                        (store', blk', "Hit breakpoint.\n" ++ fp ++
+                            ", line " ++ show line ++ ":\n" ++
+                            (concat (intersperse "\n" (map ("    | " ++)
+                                (showSnippet inComm)))))
                     else
                         runToBreakpoint store' bps blk' printFn
 
@@ -257,32 +273,42 @@ doStep :: Store -> [Either InCommand DebugOp] -> (ETree -> String) ->
     (Store, [Either InCommand DebugOp], String)
 doStep store []            printFn = (store, [], "No program loaded.")
 doStep store (comm : rest) printFn = case comm of
-    Left (InAssign _ n e) -> let evalE = evalExpr store e in
-        (M.insert n evalE store, rest, show n ++ " := " ++ printFn evalE)
-    Left (InWhile  _ gd blk) -> case evalExpr store gd of
+    Left (InAssign i n e) -> let evalE = evalExpr store e in
+        (M.insert n evalE store, rest,
+            fileInfo i ++ ", line " ++ show (lineInfo i) ++ ":\n    | " ++
+            show n ++ " := " ++ show e ++ "\n" ++ show n ++ " = " ++
+            printFn evalE)
+    Left (InWhile  i gd blk) -> case evalExpr store gd of
         ENil -> (store, rest, "Skipped or exited while-loop.")
         _    -> (store, (map Left blk) ++ (comm : rest),
-            "while " ++ show gd ++ " { ...\nEntered or re-entered while-loop.")
-    Left (InIfElse _ gd tb fb) -> case evalExpr store gd of
-        ENil -> (store, (map Left fb) ++ rest,
-            "if " ++ show gd ++ " { ...\nTook if-branch.")
-        _    -> (store, (map Left tb) ++ rest,
-            "if " ++ show gd ++ " { ...\nTook else-branch or skipped.")
-    Left (InSwitch _ gd [] def) ->
+            fileInfo i ++ ", line " ++ show (lineInfo i) ++ ":\n    | while " ++
+            show gd ++ " { ...\nEntered or re-entered while-loop.")
+    Left (InIfElse i gd tb fb) -> case evalExpr store gd of
+        ENil -> (store, (map Left fb) ++ rest, fileInfo i ++ ", line " ++
+            show (lineInfo i) ++ ":\n    | if " ++ show gd ++
+            " { ...\nTook if-branch.")
+        _    -> (store, (map Left tb) ++ rest, fileInfo i ++ ", line " ++
+            show (lineInfo i) ++ ":\n    | if " ++ show gd ++
+            " { ...\nTook else-branch or skipped.")
+    Left (InSwitch i gd [] def) ->
         (store, (map Left def) ++ rest,
-            "switch " ++ show gd ++ " { ... \nTook default case.")
+            fileInfo i ++ ", line " ++ show (lineInfo i) ++
+            ":\n    | switch " ++ show gd ++
+            " { ... \n    |     default:\nTook default case.")
     Left (InSwitch i gd ((e, blk) : cases) def) ->
         if evalExpr store gd == evalExpr store e then
             (store, (map Left blk) ++ rest,
-                "switch " ++ show gd ++ " { ...\n    case " ++ show e ++
-                ": ...\nTook switch-case.")
+                fileInfo i ++ ", line " ++ show (lineInfo i) ++
+                ":\n    | switch " ++ show gd ++ " { ...\n    |     case " ++
+                show e ++ ": ...\nTook switch-case.")
         else
             (store, Left (InSwitch i gd cases def) : rest,
-                "switch " ++ show gd ++ " { ...\n    case " ++ show e ++
-                ": ...\nSkipped switch-case.")
+                fileInfo i ++ ", line " ++ show (lineInfo i) ++
+                ":\n    | switch " ++ show gd ++ " { ...\n    |     case " ++
+                show e ++ ": ...\nSkipped switch-case.")
     Right (WhileRead n arg) -> (M.insert n arg store, rest, "read " ++
-        show n ++ " := " ++ printFn arg)
-    Right (WhileWrite n) -> (store, rest, "wrote " ++ show n ++ " := " ++
+        show n ++ " = " ++ printFn arg)
+    Right (WhileWrite n) -> (store, rest, "wrote " ++ show n ++ " = " ++
         (printFn (M.findWithDefault ENil n store)))
     Right (Message m) -> (store, rest, m)
 
@@ -421,6 +447,7 @@ helpString = concat $ (intersperse "\n") $
     , "    :cd dir        - Change the current file search path to 'dir'."
     , "    :break n       - Add a breakpoint to line 'n' of the loaded program."
     , "    :break n p     - Add a breakpoint to line 'n' of program 'p'."
+    , "    :break         - Print all breakpoints."
     , "    :delbreak n    - Delete the breakpoint on line 'n' of the loaded"
     , "                     program."
     , "    :delbreak n p  - Delete the breakpoint on line 'n' of program 'p'."

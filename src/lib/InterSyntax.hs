@@ -51,3 +51,13 @@ namesInComm comm = case comm of
         , S.unions (map (\(e, b) -> S.union (namesExpr e) (namesInBlock b)) eb)
         , namesInBlock b
         ]
+
+showSnippet :: InCommand -> [String]
+showSnippet inComm = case inComm of
+    InAssign _ n e             -> [show n ++ " := " ++ show e]
+    InWhile  _ e _             -> ["while " ++ show e ++ " { ..."]
+    InIfElse _ e _           _ -> ["if " ++ show e ++ " { ..."]
+    InSwitch _ e []          _ ->
+        ["switch " ++ show e ++ " { ...", "    default: ..."]
+    InSwitch _ e ((gd, _):_) _ ->
+        ["switch " ++ show e ++ " { ...", "    case " ++ show gd ++ ": ..."]
