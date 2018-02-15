@@ -110,10 +110,12 @@ Command line input must conform to the following grammar:
 
 #### Installing Prerequisites
 All the tools required to compile and run HWhile are included in the 
-[Haskell Platform](http://www.haskell.org/platform/).
+[Haskell Platform](http://www.haskell.org/platform/). Make sure you install the
+_full_ version as opposed to the _core_ version.
 
 Note that you may need to add the Haskell Platform's binaries to your system's
-path variable.
+path variable. If you're on windows this should happen automatically. Otherwise
+some configuration may be required.
 
 #### Installing HWhile
 Once the Haskell Platform is installed and configured correctly, you can install
@@ -127,13 +129,11 @@ install them.
 #### Invocation
 If installed correctly, HWhile can be run with the command:
 
-    hwhile <FLAG> <FILE> <EXPR>        ( Mac & Linux )
-    hwhile.exe <FLAG> <FILE> <EXPR>    ( Windows     )
+    hwhile <FLAG> <FILE> <EXPR>
 
 For example:
 
-    hwhile -i examples/count.while "[1, 2, 3]"         ( Mac & Linux )
-    hwhile.exe -i examples/count.while "[1, 2, 3]"     ( Windows     )
+    hwhile -i examples/count.while "[1, 2, 3]"
 
 This example takes a list of numbers as its argument and outputs their sum, so
 you should see `6` as the output.
