@@ -16,13 +16,45 @@ For this to work,  all the syntax sugar (extensions) of a While program has to
 be removed again.
 
 More about the syntax and the semantics (and usage) of the While language can be
-found in Bernhard’s textbook (Chapter 3-5).
+found in Bernhard’s textbook (Chapter 3-5), and we also include a summary below.
+
+### Instructions
+
+#### Installing Prerequisites
+All the tools required to compile and run HWhile are included in the
+[Haskell Platform](http://www.haskell.org/platform/). Make sure you install the
+_full_ version as opposed to the _core_ version.
+
+Note that you may need to add the Haskell Platform's binaries to your system's
+path variable. If you're on windows this should happen automatically. Otherwise
+some configuration may be required.
+
+#### Installing HWhile
+Once the Haskell Platform is installed and configured correctly, you can install
+HWhile by running:
+
+    stack install hwhile
+
+This will download HWhile and its depenencies (if necessary) and compile and
+install them.
+
+#### Invocation
+If installed correctly, HWhile can be run with the command:
+
+    hwhile <FLAG> <FILE> <EXPR>
+
+For example:
+
+    hwhile -i examples/count.while "[1, 2, 3]"
+
+This example takes a list of numbers as its argument and outputs their sum, so
+you should see `6` as the output.
 
 ### Syntax
 The grammar below gives exactly the concrete syntax of this implementation:
 
     PROG  ::= ID read ID BLOCK write ID
-    
+
     BLOCK ::= { CMDS }
             | {}
 
@@ -52,7 +84,7 @@ The grammar below gives exactly the concrete syntax of this implementation:
 
     LIST  ::= , EXP LIST
             | ]
-          
+
     LIT   ::= nil
             | true
             | false
@@ -73,9 +105,9 @@ The grammar below gives exactly the concrete syntax of this implementation:
             | @doTl
             | @cons
             | @doCons
-          
+
     NAT   ::= 0|[1-9][0-9]+
-          
+
     ID    ::= [a-zA-Z_'][a-zA-Z0-9_']*
 
 Command line input must conform to the following grammar:
@@ -106,34 +138,70 @@ Command line input must conform to the following grammar:
     INPLST ::= , INP INPLST
             | ]
 
-### Instructions
+### Semantics
+The semantics of HWhile programs are defined by functions. These functions take
+a program construct - an expression, block, command or program, and a _store_ -
+a function of type `X -> T` that maps variable names to trees.
 
-#### Installing Prerequisites
-All the tools required to compile and run HWhile are included in the 
-[Haskell Platform](http://www.haskell.org/platform/). Make sure you install the
-_full_ version as opposed to the _core_ version.
+We first define two functions over stores - addition, which adds a new binding,
+and lookup, which retrieves the tree bound to the given name.
 
-Note that you may need to add the Haskell Platform's binaries to your system's
-path variable. If you're on windows this should happen automatically. Otherwise
-some configuration may be required.
+    σ + (x -> T) = σ, x -> T       if x ∉ σ
+                 | σ', x -> T, σ'' if σ = σ', x -> U, σ''
 
-#### Installing HWhile
-Once the Haskell Platform is installed and configured correctly, you can install
-HWhile by running:
+    σ(x) = T   if σ = σ', x -> T, σ''
+         | nil if x ∉ σ
 
-    stack install hwhile
+Semantics for expressions are defined as follows:
 
-This will download HWhile and its depenencies (if necessary) and compile and
-install them.
+    [e] : EXP -> (X -> T) -> T
 
-#### Invocation
-If installed correctly, HWhile can be run with the command:
+    [x] σ = σ(x)
+    [hd e] σ = nil if [e] σ = nil
+             | H   if [e] σ = <H.T>
+    [tl e] σ = nil if [e] σ = nil
+             | T   if [e] σ = <H.T>
+    [e = e'] σ = nil if [e] σ /= [e'] σ
+               | T   if [e] σ  = [e'] σ where T /= nil
+    [cons e e'] σ = <H.T> where H = [e] σ, T = [e'] σ
 
-    hwhile <FLAG> <FILE> <EXPR>
+For blocks:
 
-For example:
+    [b] : BLOCK -> (X -> T) -> (X -> T)
 
-    hwhile -i examples/count.while "[1, 2, 3]"
+    [{}] σ = σ
+    [{c; cs}] σ = [{cs}] ([c] σ)
 
-This example takes a list of numbers as its argument and outputs their sum, so
-you should see `6` as the output.
+For commands, we define semantics only for pure commands (assignment, while
+loops and if-then-else statements). The semantics for switch statements and
+macro calls are given by translation to pure commands. The semantics for pure
+commands are given as follows:
+
+    [c] : CMD -> (X -> T) -> (X -> T)
+
+    [x := e] σ = σ + (x -> [e] σ)
+    [while e b] σ = σ                   if [e] σ  = nil
+                  | [while e b] ([b] σ) if [e] σ /= nil
+    [if e b else b'] σ = [b]  σ if [e] σ /= nil
+                       | [b'] σ if [e] σ  = nil
+
+The translations for if-then statements, switch statements and macros are
+defined as follows:
+
+    if e b = if e b else {}
+
+    switch e {} = {}
+    switch e { default : cs } = { cs }
+    switch e { case e : cs cases } = if e { cs } else switch e { cases }
+
+    x := <macro> e = disjoin(cmds); x := y
+    where macro.while = macro read z { cmds } write y
+
+The function `disjoin` renames the variable names in `cmds` such that there are
+no names in common with the program in which the macro call occurs.
+
+Finally, the semantics for programs are defined as follows:
+
+    [p] : PROG -> T -> T
+
+    [n read x b write y] T = ([b] (x -> T))(y)
