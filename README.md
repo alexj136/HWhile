@@ -192,13 +192,15 @@ defined as follows:
 
     switch e {} = {}
     switch e { default : cs } = { cs }
-    switch e { case e : cs cases } = if e { cs } else switch e { cases }
+    switch e1 { case e2 : cs cases } =
+        { if e1 = e2 { cs } else switch e1 { cases } }
 
-    x := <macro> e = disjoin(cmds); x := y
+    x := <macro> e = z := e; disjoin(cmds, z, y); x := y
     where macro.while = macro read z { cmds } write y
 
 The function `disjoin` renames the variable names in `cmds` such that there are
-no names in common with the program in which the macro call occurs.
+no names in common with the program in which the macro call occurs, except for
+the read-variable `z` and the write-variable `y`.
 
 Finally, the semantics for programs are defined as follows:
 
