@@ -17,8 +17,6 @@ be removed again.
 
 More about the syntax and the semantics (and usage) of the While language can be
 found in Bernhard’s textbook (Chapter 3-5), and we also include a summary below.
-There are syntax highlighting extensions available [for Sublime](https://github.com/z5229221/WHILE-Syntax-Highlighter)
-and [for VS Code](https://github.com/davidpomerenke/while-syntax-vscode).
 
 ### Instructions
 
@@ -51,6 +49,12 @@ For example:
 
 This example takes a list of numbers as its argument and outputs their sum, so
 you should see `6` as the output.
+
+#### Tooling
+
+There are syntax highlighting extensions available 
+[for Sublime](https://github.com/z5229221/WHILE-Syntax-Highlighter) and 
+[for VS Code](https://github.com/davidpomerenke/while-syntax-vscode).
 
 ### Syntax
 The grammar below gives exactly the concrete syntax of this implementation:
