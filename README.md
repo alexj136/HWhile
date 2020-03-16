@@ -50,6 +50,12 @@ For example:
 This example takes a list of numbers as its argument and outputs their sum, so
 you should see `6` as the output.
 
+#### Tooling
+
+There are syntax highlighting extensions available 
+[for Sublime](https://github.com/z5229221/WHILE-Syntax-Highlighter) and 
+[for VS Code](https://github.com/davidpomerenke/while-syntax-vscode).
+
 ### Syntax
 The grammar below gives exactly the concrete syntax of this implementation:
 
