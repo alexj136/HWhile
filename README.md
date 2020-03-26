@@ -1,19 +1,40 @@
 ## HWhile
-HWhile is an interpreter for a simple While language originally used by Neil
-Jones in his book “Computability and Complexity". The While language is a simple
-imperative programming language with while-loops, assignment and conditionals.
-It has a single data type: binary trees. The HWhile interpreter is written in
-Haskell.
+HWhile is an educational programming language designed for teaching the basics
+of programming, computability and complexity theory. HWhile's simplicity makes
+it extremely easy to learn. It has just 3 statement types: while loops,
+conditionals and assignment. It has a single data type: the binary tree, which
+supports just a few operations: construct a new binary tree out of two subtrees
+('`cons`'), and retrieval of the left and right subtrees of a binary tree
+('`hd`' and '`tl`'). HWhile has fully specified syntax and semantics.
 
-This current implementation also includes syntactic sugar such as switch
-statements, macros, list notation, equality, and natural number literals. It
-therefore supports (almost fully) the version of While used in Bernhard Reus’
-textbook [Limits of Computation - From a Programming Perspective](http:limits.bernhardreus.com)
-and has been developed in co-operation with Bernhard to support students on the
-corresponding module at Sussex University.
-This version also allows one to translate while programs into programs as data.
-For this to work,  all the syntax sugar (extensions) of a While program has to
-be removed again.
+##### An example
+
+All HWhile programs have a single input and a single output, each a binary
+tree. The example program below adds together two natural numbers `X`, `Y`
+(represented by trees) that are passed in coupled in the binary tree `XY`.
+
+    add                         // - 'add' is the name of the program.
+    read XY {                   // - The input binary tree is the variable 'XY'.
+        X := hd XY;             // - Extract the arguments X, Y.
+        Y := tl XY;
+        while X {               // - Perform the addition by repeatedly
+            Y := cons nil Y;    //   subtracting from X and adding to Y until X
+            X := tl X           //   is the the empty tree (representing 0).
+        }
+    } write Y                   // - Output the final value of Y as the result.
+
+HWhile also includes some convenience features for dealing with
+programs-as-data, as well as syntactic sugar for natural numbers and lists.
+Switch statements and external macro calls, and tree equality testing are also
+supported as syntactic sugar.
+
+HWhile supports (almost fully) the version of While used in Bernhard Reus’
+textbook [Limits of Computation - From a Programming
+Perspective](http:limits.bernhardreus.com) and has been developed in
+co-operation with Bernhard to support students on the corresponding module at
+Sussex University. This version also allows one to translate while programs
+into programs as data. For this to work,  all the syntax sugar (extensions) of
+a While program has to be removed again.
 
 More about the syntax and the semantics (and usage) of the While language can be
 found in Bernhard’s textbook (Chapter 3-5), and we also include a summary below.
@@ -52,12 +73,28 @@ you should see `6` as the output.
 
 #### Tooling
 
-There are syntax highlighting extensions available 
-[for Sublime](https://github.com/z5229221/WHILE-Syntax-Highlighter) and 
-[for VS Code](https://github.com/davidpomerenke/while-syntax-vscode).
+There are syntax highlighting extensions available for
+[Sublime Text](https://github.com/z5229221/WHILE-Syntax-Highlighter) and
+[VS Code](https://github.com/davidpomerenke/while-syntax-vscode).
 
 ### Syntax
-The grammar below gives exactly the concrete syntax of this implementation:
+Informally, the syntax of HWhile is summarised as:
+
+    PROG ::= programName read inputName { CMD; CMD; ... } write outputName
+    CMD  ::= var := EXP
+          |  while EXP { CMD; CMD; ... }
+          |  if EXP { CMD; CMD; ... }
+          |  if EXP { CMD; CMD; ... } else { CMD; CMD; ... }
+    EXP  ::= nil | cons EXP EXP | hd EXP | tl EXP | (EXP) | var
+
+A HWhile program reads its input into the variable `inputName`, which may then
+occur in the following `CMD`s. The value of the variable `outputName` is the
+output of program. All variables have the initial value of `nil`. For the
+`while` and `if` statements, the tree `nil` is falsy and all other trees are
+truthy.
+
+The grammar below gives exactly the concrete syntax of this implementation,
+including syntactic sugar:
 
     PROG  ::= ID read ID BLOCK write ID
 
